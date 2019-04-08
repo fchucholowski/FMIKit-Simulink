@@ -103,8 +103,6 @@ OPTIMIZATION_FLAGS = |>OPTIMIZATION_FLAGS<|
 ADDITIONAL_LDFLAGS = |>ADDITIONAL_LDFLAGS<|
 FMI_VER         = |>FMI_VER<|
 FMI_TYPE        = |>FMI_TYPE<|
-FMI_ZIP_UTIL    = |>FMI_ZIP_UTIL<|
-FMI_ZIP_OPTS    = |>FMI_ZIP_OPTS<|
 FMI_LOAD_MEX    = |>FMI_LOAD_MEX<|
 FMI_USER_SRCS   = |>FMI_USER_SRCS<|
 FMI_OPT_OPTS    = |>FMI_OPT_OPTS<|
@@ -238,7 +236,11 @@ else
 endif
 
 FMI_SRC = $(SFCN_FMI_ROOT)/c/$(FMI_MODULE).c
+FMI_SRC2 = $(SFCN_FMI_ROOT)/c/$(FMI_PREFIX).c
+FMI_SRC3 = $(SFCN_FMI_ROOT)/c/rtPrintfNoOp_cpp.cpp
 FMI_OBJ = $(FMI_MODULE).o
+FMI_OBJ2 = $(FMI_PREFIX).o
+FMI_OBJ3 = rtPrintfNoOp_cpp.o
 
 FMI_MODULE_OBJS = $(MODULES:.c=.o)
 
@@ -255,7 +257,7 @@ endif
 FMI_SFCN_OBJS_CPP = $(FMI_SFCN_SRCS:.cpp=.o)
 FMI_SFCN_OBJS = $(FMI_SFCN_OBJS_CPP:.c=.o)
 
-FMI_OBJS = $(FMI_SOLVER_OBJ) $(FMI_RT_OBJS) $(FMI_SFCN_OBJS) $(FMI_MODULE_OBJS) $(LOCAL_USER_OBJS) $(MODEL)_sf.o
+FMI_OBJS = $(FMI_OBJ2) $(FMI_OBJ3) $(FMI_SOLVER_OBJ) $(FMI_RT_OBJS) $(FMI_SFCN_OBJS) $(FMI_MODULE_OBJS) $(LOCAL_USER_OBJS) $(MODEL)_sf.o
 
 # To invoke special rule for compilation of S-function sources
 FMI_SFCN_DUMMIES_CPP = $(FMI_SFCN_SRCS:.cpp=.dum)
@@ -285,12 +287,9 @@ FMI_SOLVER_DEFINES     = -DNRT -DRT_MALLOC
 FMI_ROOT_SFCN_INCLUDES = -I$(SFCN_FMI_ROOT)/c
 FMI_SOLVER_INCLUDES = -I$(MATLAB_ROOT)/rtw/c/src/matrixmath
 
-FMI_IMPL = $(SFCN_FMI_BIN)/$(FMI_PREFIX).o
-FMI_RTP_CPP = $(SFCN_FMI_ROOT)/bin/rtPrintfNoOp/$(FMI_DIR)/rtPrintfNoOp_cpp.o
-
 FMI_EXT = so
 FMI_LD  = gcc
-FMI_LD_CMD = -shared -fPIC -Wl,--allow-multiple-definition $(FMI_ARCH_OPT) $(FMI_OBJS) $(FMI_IMPL) $(FMI_RTP_CPP) $(LIBS) -lm
+FMI_LD_CMD = -shared -fPIC -Wl,--allow-multiple-definition $(FMI_ARCH_OPT) $(FMI_OBJS) $(LIBS) -lm
 ifeq ($(FMI_LOAD_MEX),1)
  FMI_LD_CMD += -L$(MATLAB_ROOT)/bin/$(ARCH) -lmx -lmex -lmat
 endif
@@ -312,16 +311,14 @@ $(PROGRAM) : $(OBJS) $(LIBS) $(FMI_OBJ) $(FMI_SFCN_DUMMIES)
 	$(FMI_LD) $(FMI_LD_CMD) $(FMI_LD_OUT)
 	@echo "### Cleaning up temporary files and object files..."
 	@$(FMI_DEL)
-	@echo "### Creating FMU archive $(MODEL)_sf.fmu"
 	@rm -rf ../$(MODEL)_sf.fmu
 	@rm -rf binaries
-	@mkdir binaries
-	@mkdir binaries/$(FMI_DIR)
-	@mv $(MODEL)_sf.$(FMI_EXT) binaries/$(FMI_DIR)
-	$(FMI_ZIP_UTIL) $(FMI_ZIP_OPTS) ../$(MODEL)_sf.fmu modelDescription.xml binaries resources
-	@rm -rf binaries
-	@rm -rf resources
-	@rm -f modelDescription.xml
+	@mkdir FMUArchive
+	@mkdir FMUArchive/binaries
+	@mkdir FMUArchive/binaries/$(FMI_DIR)
+	@mv $(MODEL)_sf.$(FMI_EXT) FMUArchive/binaries/$(FMI_DIR)
+	@mv modelDescription.xml FMUArchive
+	@mv resources FMUArchive
 
 %.o : %.c
 	$(CC) -c $(MEX_FLAGS) $(INCLUDES) "$<"
@@ -347,6 +344,8 @@ $(FMI_OBJ) : $(FMI_SRC)
 	@echo "###"
 	@echo "### Compiling FMI wrapper: $(FMI_SRC)"
 	$(FMI_CC) $(FMI_CC_FLAGS) $(FMI_ROOT_SFCN_DEFINES) $(FMI_ROOT_SFCN_INCLUDES) $(INCLUDES) $(FMI_SRC)
+	$(FMI_CC) $(FMI_CC_FLAGS) $(FMI_ROOT_SFCN_DEFINES) $(FMI_ROOT_SFCN_INCLUDES) $(INCLUDES) $(FMI_SRC2)
+	$(FMI_CC) $(FMI_CC_FLAGS) $(FMI_ROOT_SFCN_DEFINES) $(FMI_ROOT_SFCN_INCLUDES) $(INCLUDES) $(FMI_SRC3)
 	@echo "### Compiling fixed-step solver: $(FMI_SOLVER_SRC)"
 	$(FMI_CC) $(FMI_CC_FLAGS) $(FMI_SOLVER_DEFINES) $(FMI_SOLVER_INCLUDES) $(INCLUDES) $(FMI_SOLVER_SRC)
     ifeq ($(FMI_TYPE),CoSimulation)

@@ -3,6 +3,9 @@
 #  Template makefile for building RTW-generated S-functions with FMI
 #  using Visual C compilers (64-bit).
 #
+#   Version: 2.5.0
+#   Date:    Oct. 12, 2018 
+#
 #  Customized from rtwsfcn_vcx64.tmf in the Matlab distribution.
 #
 
@@ -40,6 +43,7 @@ HOST            = PC
 BUILD           = yes
 SYS_TARGET_FILE = rtwsfcnfmi.tlc
 COMPILER_TOOL_CHAIN = vcx64
+TOOLCHAIN_NAME = ["MinGW64 | gmake (64-bit Windows)"]
 
 #---------------------- Tokens expanded by make_rtw ---------------------------
 #
@@ -233,7 +237,8 @@ FMI_SFCN_OBJS_CPP_LOWER = $(FMI_SFCN_OBJS_CPP_UPPER:.cpp=.obj)
 FMI_SFCN_OBJS_C_UPPER = $(FMI_SFCN_OBJS_CPP_LOWER:.C=.obj)
 FMI_SFCN_OBJS_C_LOWER = $(FMI_SFCN_OBJS_C_UPPER:.c=.obj)
 
-FMI_OBJS = $(MODEL)_sf.obj $(FMI_OBJ2) $(FMI_OBJ3) $(FMI_SOLVER_OBJ) $(FMI_SFCN_OBJS_C_LOWER) $(FMI_RT_OBJS) $(OBJS_C_LOWER)
+FMI_OBJS_ALL = $(MODEL)_sf.obj $(FMI_OBJ2) $(FMI_OBJ3) $(FMI_SOLVER_OBJ) $(FMI_SFCN_OBJS_C_LOWER) $(FMI_RT_OBJS) $(OBJS_C_LOWER)
+FMI_OBJS = $(FMI_OBJS_ALL:rt_nonfinite.obj=)
 
 # To invoke special rule for compilation of S-function sources
 FMI_SFCN_DUMMIES_CPP_UPPER = $(FMI_SFCN_SRCS:.CPP=.dum)
@@ -281,10 +286,7 @@ FMI_LD_OUT = /OUT:"$(MODEL)_sf.$(FMI_EXT)" /NOLOGO
 all: set_environment_variables ..\$(MODEL)_sf.$(MEXEXT) $(MODEL)_sf.$(FMI_EXT)
 
 ..\$(MODEL)_sf.$(MEXEXT) : $(OBJS) $(LIBS)
-	@cmd /C "echo ### Linking ..."
-	$(PERL) $(GEN_LNK_SCRIPT) $(CMD_FILE) $(OBJS)
-	$(MEX) $(MEX_FLAGS) @$(CMD_FILE) $(LIBS) $(S_FUNCTIONS_LIB) -outdir .. 
-	@cmd /C "echo ### Created MEX-file $(MODEL)_sf.$(MEXEXT)"
+	@cmd /C "echo ### Created MEX-file $(MODEL)_sf.$(MEXEXT) (disabled for R2018b and later)"
     @if exist $(FMI_OBJ) del $(FMI_OBJ)
 
 $(MODEL)_sf.$(FMI_EXT) : $(FMI_OBJ) $(FMI_SFCN_DUMMIES)
@@ -336,23 +338,23 @@ $(MODEL)_sf.$(FMI_EXT) : $(FMI_OBJ) $(FMI_SFCN_DUMMIES)
 
 {..}.c.obj :
 	@cmd /C "echo ### Compiling $<"
-	$(CC) $(MEX_FLAGS) $(USER_INCLUDES) $<
+	$(FMI_CC) $(FMI_CC_FLAGS) $(USER_INCLUDES) $<
 
 {..}.cpp.obj :
 	@cmd /C "echo ### Compiling $<"
-	$(CPP) $(MEX_FLAGS) $(USER_INCLUDES) $<
+	$(FMI_CC) $(FMI_CC_FLAGS) $(USER_INCLUDES) $<
 
 .c.obj :
 	@cmd /C "echo ### Compiling $<"
 	@if exist $*.pdb del $*.pdb
 	@if exist ..\$(MODEL)_sf.pdb del ..\$(MODEL)_sf.pdb
-	$(CC) $(MEX_FLAGS) $(USER_INCLUDES) $<
+	$(FMI_CC) $(FMI_CC_FLAGS) $(FMI_ROOT_SFCN_DEFINES) $(USER_INCLUDES) $<
 
 .cpp.obj :
 	@cmd /C "echo ### Compiling $<"
 	@if exist $*.pdb del $*.pdb
 	@if exist ..\$(MODEL)_sf.pdb del ..\$(MODEL)_sf.pdb
-	$(CPP) $(MEX_FLAGS) $(USER_INCLUDES) $<
+	$(FMI_CC) $(FMI_CC_FLAGS) $(FMI_ROOT_SFCN_DEFINES) $(USER_INCLUDES) $<
 
 $(FMI_OBJ) : 
     @cmd /C "echo ###"
