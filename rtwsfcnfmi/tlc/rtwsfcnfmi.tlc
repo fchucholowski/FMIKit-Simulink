@@ -1,5 +1,5 @@
-%% SYSTLC: S-Function Target with Functional Mockup Interface (FMI) TMF: rtwsfcnfmi_tmf MAKE: make_rtw \
-%%   EXTMODE: no_ext_comm
+%% SYSTLC: S-Function Target with Functional Mockup Interface (FMI) \
+%%    TMF: none MAKE: make_rtw EXTMODE: no_ext_comm
 
 %% 
 %% TLC file for generation of S-function with FMI

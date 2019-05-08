@@ -1,44 +1,57 @@
 cmake_minimum_required (VERSION 3.2)
 
-set(MATLAB_ROOT "C:/Program Files/MATLAB/R2016b")
-set(MODEL_PATH "C:/Users/tsr2/Downloads/fum_export/f14.slx" CACHE STRING "Path to the Simulink model")
-
-get_filename_component(MODEL_DIR  ${MODEL_PATH} DIRECTORY)
-get_filename_component(MODEL_NAME ${MODEL_PATH} NAME_WE)
+set(MODEL_NAME "BouncingBall" CACHE STRING "Model name")
+set(MATLAB_ROOT "C:/Program Files/MATLAB/R2019a" CACHE STRING "MATLAB install directory")
+set(RTW_DIR "E:/Development/FMIKit-Simulink/BouncingBall_sfcn_rtw_fmi" CACHE STRING "RTW generated model directory")
+set(FMU_BUILD_DIR "${RTW_DIR}/FMUArchive")
 
 project (${MODEL_NAME})
 
-# solver
+message(${CMAKE_INSTALL_PREFIX})
+
+if (WIN32)
+  set(FMI_PLATFORM win)
+elseif (APPLE)
+  set(FMI_PLATFORM darwin)
+else ()
+  set(FMI_PLATFORM linux)
+endif ()
+
+if ("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
+  set (FMI_PLATFORM ${FMI_PLATFORM}64)
+else ()
+  set (FMI_PLATFORM ${FMI_PLATFORM}32)
+endif ()
+
 add_library(ode1 STATIC
   "${MATLAB_ROOT}/rtw/c/src/ode1.c"
 )
 
-target_compile_definitions(ode1 PRIVATE 
+target_compile_definitions(ode1 PRIVATE
 	_CRT_SECURE_NO_WARNINGS
 	NRT
 	RT_MALLOC
 )
 
 target_include_directories(ode1 PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${MODEL_DIR}/${MODEL_NAME}_sfcn_rtw_fmi"
+  "${RTW_DIR}"
   "${MATLAB_ROOT}/extern/include"
   "${MATLAB_ROOT}/simulink/include"
   "${MATLAB_ROOT}/rtw/c/src/matrixmath"
   "${MATLAB_ROOT}/rtw/c/src"
 )
 
-# model
 add_library(${MODEL_NAME}_sf SHARED
-  c/fmi.h
-  c/fmi/fmi2Functions.h
-  c/fmi/fmi2FunctionTypes.h
-  c/fmi/fmi2TypesPlatform.h
-  "${MODEL_DIR}/${MODEL_NAME}_sfcn_rtw_fmi/${MODEL_NAME}_sf_data.c"
-  "${MODEL_DIR}/${MODEL_NAME}_sfcn_rtw_fmi/rtGetInf.c"
-  "${MODEL_DIR}/${MODEL_NAME}_sfcn_rtw_fmi/rtGetNaN.c"
+  "c/fmi.h"
+  "c/fmi/fmi2Functions.h"
+  "c/fmi/fmi2FunctionTypes.h"
+  "c/fmi/fmi2TypesPlatform.h"
   "c/fmi2Functions.c"
   "c/fmi2.c"
+  "${RTW_DIR}/${MODEL_NAME}_sf_data.c"
+  "${RTW_DIR}/rtGetInf.c"
+  "${RTW_DIR}/rtGetNaN.c"
+  "${RTW_DIR}/modelDescription.xml"
 )
 
 target_link_libraries(${MODEL_NAME}_sf
@@ -48,7 +61,7 @@ target_link_libraries(${MODEL_NAME}_sf
   ode1
 )
 
-target_compile_definitions(${MODEL_NAME}_sf PRIVATE 
+target_compile_definitions(${MODEL_NAME}_sf PRIVATE
 	_CRT_SECURE_NO_WARNINGS
 	FIPXT_SHARED_MODULE
 	rt_matrx_h
@@ -58,9 +71,29 @@ target_compile_definitions(${MODEL_NAME}_sf PRIVATE
 
 target_include_directories(${MODEL_NAME}_sf PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}"
-  "${MODEL_DIR}/${MODEL_NAME}_sfcn_rtw_fmi"
+  "${RTW_DIR}"
   "${MATLAB_ROOT}/extern/include"
   "${MATLAB_ROOT}/simulink/include"
   "${MATLAB_ROOT}/rtw/c/src/matrixmath"
   "${MATLAB_ROOT}/rtw/c/src"
+)
+
+# modelDescription.xml
+add_custom_command(TARGET ${MODEL_NAME}_sf POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
+  ${RTW_DIR}/modelDescription.xml
+  ${FMU_BUILD_DIR}/modelDescription.xml
+)
+
+# shared library
+add_custom_command(TARGET ${MODEL_NAME}_sf POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
+  $<TARGET_FILE:${MODEL_NAME}_sf>
+  ${FMU_BUILD_DIR}/binaries/${FMI_PLATFORM}/$<TARGET_FILE_NAME:${MODEL_NAME}_sf>
+)
+
+# create ZIP archive
+add_custom_command(TARGET ${MODEL_NAME}_sf POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E tar "cfv" ${RTW_DIR}/${MODEL_NAME}_sf.fmu --format=zip
+  modelDescription.xml
+  binaries
+  WORKING_DIRECTORY ${FMU_BUILD_DIR}
 )
