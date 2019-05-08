@@ -5,6 +5,7 @@ set(SOLVER "ode1" CACHE STRING "Solver")
 set_property(CACHE SOLVER PROPERTY STRINGS ode1 ode2 ode3 ode4 ode5 ode8 ode14x)
 set(MATLAB_ROOT "C:/Program Files/MATLAB/R2019a" CACHE STRING "MATLAB install directory")
 set(RTW_DIR "E:/Development/FMIKit-Simulink/BouncingBall_sfcn_rtw_fmi" CACHE STRING "RTW generated model directory")
+set(CUSTOM_SOURCE "" CACHE STRING "Additional source files")
 set(FMU_BUILD_DIR "${RTW_DIR}/FMUArchive")
 
 project (${MODEL_NAME})
@@ -61,6 +62,7 @@ add_library(${MODEL_NAME}_sf SHARED
   "${RTW_DIR}/rtGetInf.c"
   "${RTW_DIR}/rtGetNaN.c"
   "${RTW_DIR}/modelDescription.xml"
+  ${CUSTOM_SOURCE}
 )
 
 target_link_libraries(${MODEL_NAME}_sf

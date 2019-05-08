@@ -185,15 +185,6 @@ end
     ['Check this box to load internal S-functions from pre-compiled binary MEX files instead of using stand-alone compilation of S-function sources.'];
 
   i = i + 1;
-  rtwoptions(i).prompt         = 'Additional S-function sources';
-  rtwoptions(i).type           = 'Edit';
-  rtwoptions(i).default        = '';
-  rtwoptions(i).tlcvariable    = '';
-  rtwoptions(i).makevariable   = 'FMI_USER_SRCS';
-  rtwoptions(i).tooltip        = ...
-    ['Additional user source files for S-functions. Must be used instead of Custom Code > Source files'];
-
-  i = i + 1;
   rtwoptions(i).prompt         = 'Compiler optimization flags';
   rtwoptions(i).type           = 'Edit';
 if ispc
