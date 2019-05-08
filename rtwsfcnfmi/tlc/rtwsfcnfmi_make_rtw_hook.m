@@ -12,8 +12,8 @@ switch hookMethod
         pathstr = which('rtwsfcnfmi.tlc');
         [tlc_dir, ~, ~] = fileparts(pathstr);
         [cmakelists_dir, ~, ~] = fileparts(tlc_dir);
-        command   = 'cmake'; %get_param(modelName, 'CMakeCommand');
-        generator = 'Visual Studio 14 2015 Win64'; %get_param(modelName, 'CMakeGenerator');
+        command   = get_param(modelName, 'CMakeCommand');
+        generator = get_param(modelName, 'CMakeGenerator');
 
         % check for cmake executable
         status = system(command);
