@@ -1,13 +1,13 @@
 cmake_minimum_required (VERSION 3.2)
 
 set(MODEL_NAME "BouncingBall" CACHE STRING "Model name")
+set(SOLVER "ode1" CACHE STRING "Solver")
+set_property(CACHE SOLVER PROPERTY STRINGS ode1 ode2 ode3 ode4 ode5 ode8 ode14x)
 set(MATLAB_ROOT "C:/Program Files/MATLAB/R2019a" CACHE STRING "MATLAB install directory")
 set(RTW_DIR "E:/Development/FMIKit-Simulink/BouncingBall_sfcn_rtw_fmi" CACHE STRING "RTW generated model directory")
 set(FMU_BUILD_DIR "${RTW_DIR}/FMUArchive")
 
 project (${MODEL_NAME})
-
-message(${CMAKE_INSTALL_PREFIX})
 
 if (WIN32)
   set(FMI_PLATFORM win)
@@ -23,17 +23,26 @@ else ()
   set (FMI_PLATFORM ${FMI_PLATFORM}32)
 endif ()
 
-add_library(ode1 STATIC
-  "${MATLAB_ROOT}/rtw/c/src/ode1.c"
-)
+set(SOLVER_SOURCES "${MATLAB_ROOT}/rtw/c/src/${SOLVER}.c")
 
-target_compile_definitions(ode1 PRIVATE
+if ("${SOLVER}" STREQUAL "ode14x")
+  set(SOLVER_SOURCES
+    ${SOLVER_SOURCES}
+    "${MATLAB_ROOT}/rtw/c/src/matrixmath/rt_backsubrr_dbl.c"
+    "${MATLAB_ROOT}/rtw/c/src/matrixmath/rt_forwardsubrr_dbl.c"
+    "${MATLAB_ROOT}/rtw/c/src/matrixmath/rt_lu_real.c"
+  )
+endif ()
+
+add_library(${SOLVER} STATIC ${SOLVER_SOURCES})
+
+target_compile_definitions(${SOLVER} PRIVATE
 	_CRT_SECURE_NO_WARNINGS
 	NRT
 	RT_MALLOC
 )
 
-target_include_directories(ode1 PRIVATE
+target_include_directories(${SOLVER} PRIVATE
   "${RTW_DIR}"
   "${MATLAB_ROOT}/extern/include"
   "${MATLAB_ROOT}/simulink/include"
@@ -58,7 +67,7 @@ target_link_libraries(${MODEL_NAME}_sf
   "${MATLAB_ROOT}/extern/lib/win64/microsoft/libmx.lib"
   "${MATLAB_ROOT}/extern/lib/win64/microsoft/libmex.lib"
   "${MATLAB_ROOT}/extern/lib/win64/microsoft/sf_runtime.lib"
-  ode1
+  ${SOLVER}
 )
 
 target_compile_definitions(${MODEL_NAME}_sf PRIVATE
