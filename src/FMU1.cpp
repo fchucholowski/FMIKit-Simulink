@@ -92,11 +92,14 @@ namespace fmikit {
 		switch (status) {
 		case fmi1Fatal:
 		case fmi1Error:
-			logFMUMessage(FATAL, category, message, args); break;
+			logFMUMessage(nullptr, FATAL, category, message, args);
+			break;
 		case fmi1Warning:
-			logFMUMessage(WARNING, category, message, args); break;
+			logFMUMessage(nullptr, WARNING, category, message, args);
+			break;
 		default:
-			logFMUMessage(INFO, category, message, args); break;
+			logFMUMessage(nullptr, INFO, category, message, args);
+			break;
 		}
 
 		va_end(args);

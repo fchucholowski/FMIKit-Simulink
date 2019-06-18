@@ -67,9 +67,13 @@ namespace fmikit {
 		STRING
 	};
 
+	class FMU;
+
 	typedef unsigned int ValueReference;
 
-	typedef void MessageLogger(LogLevel level, const char* category, const char* message, va_list args);
+	typedef void MessageLogger(FMU *instance, LogLevel level, const char* category, const char* message);
+
+	typedef void FMICallLogger(FMU *instance, const char* message);
 
 	typedef void * allocateMemoryCallback(size_t count, size_t size);
 
@@ -106,11 +110,14 @@ namespace fmikit {
 
 	public:
 		static MessageLogger *m_messageLogger;
+		FMICallLogger *m_fmiCallLogger = nullptr;
 
 		static const char *platform();
 		static LogLevel logLevel() { return m_logLevel; }
 		static void setLogLevel(LogLevel level) { m_logLevel = level; }
 		static void setErrorDiagnostics(ErrorDiagnostics m_errorDiagnostics) { m_errorDiagnostics = m_errorDiagnostics; }
+
+		void *m_userData = nullptr;
 
 		explicit FMU(const std::string &guid,
 			const std::string &modelIdentifier,
@@ -155,9 +162,9 @@ namespace fmikit {
 
 		void logDebug(const char *message, ...);
 		void logInfo(const char *message, ...);
-		static void error(const char *message, ...);
+		void error(const char *message, ...);
 
-		static void logFMUMessage(LogLevel level, const char* category, const char* message, va_list args);
+		static void logFMUMessage(FMU *instance, LogLevel level, const char* category, const char* message, va_list args);
 
 		void logGetReal(const char *functionName, const ValueReference vr[], size_t nvr, const double value[]);
 		void logSetReal(const char *functionName, const ValueReference vr[], size_t nvr, const double value[]);

@@ -26,6 +26,8 @@ using namespace fmikit;
 
 #define MAX_MESSAGE_SIZE 4096
 
+//static FILE *logfile;
+
 enum Parameter {
 
 	fmiVersionParam,
@@ -93,7 +95,10 @@ static string unzipDirectory(SimStruct *S) {
 	return getStringParam(S, unzipDirectoryParam);
 }
 
-inline fmikit::LogLevel logLevel(SimStruct *S) { return static_cast<fmikit::LogLevel>(static_cast<int>(mxGetScalar(ssGetSFcnParam(S, logLevelParam )))); }
+inline fmikit::LogLevel logLevel(SimStruct *S) { 
+	return DEBUG;
+	//return static_cast<fmikit::LogLevel>(static_cast<int>(mxGetScalar(ssGetSFcnParam(S, logLevelParam )))); 
+}
 
 static string errorDiagnostics(SimStruct *S) {
 	return getStringParam(S, errorDiagnosticsParam);
@@ -181,26 +186,71 @@ template<typename T> T *component(SimStruct *S) {
 	return dynamic_cast<T *>(fmu);
 }
 
-static void logMessage(LogLevel level, const char* category, const char* message, va_list args) {
-	char buf[MAX_MESSAGE_SIZE];
-	vsnprintf(buf, MAX_MESSAGE_SIZE, message, args);
-	strncat(buf, "\n", MAX_MESSAGE_SIZE);
-	ssPrintf(buf);
+static void logMessage(FMU *instance, LogLevel level, const char* category, const char* message) {
+
+	//auto file = fopen("BouncingBall_log.txt", "a");
+
+	//if (file) {
+	//	fprintf(file, message);
+	//	fprintf(file, "\n");
+	//}
+	//fclose(file);
+
+	//ssPrintf(message);
+	//ssPrintf("\n");
+}
+
+static void logCall(SimStruct *S, const char* message) {
+
+	void **p = ssGetPWork(S);
+	FILE *logfile = static_cast<FILE *>(p[1]);
+
+	if (logfile) {
+		fprintf(logfile, message);
+		fprintf(logfile, "\n");
+		fflush(logfile);
+	}
+}
+
+static void logFMICall(FMU *instance, const char* message) {
+
+	if (instance && instance->m_userData) {
+		SimStruct *S = static_cast<SimStruct *>(instance->m_userData);
+		logCall(S, message);
+	}
+
+	////auto logfile = fopen("BouncingBall_fmi.txt", "a");
+
+	//SimStruct *S = static_cast<SimStruct *>(instance->m_userData);
+	//void **p = ssGetPWork(S);
+	//FILE *logfile = static_cast<FILE *>(p[1]);
+
+	//if (logfile) {
+	//	fprintf(logfile, message);
+	//	fprintf(logfile, "\n");
+	//	fflush(logfile);
+	//}
+
+	////fclose(file);
 }
 
 static void logDebug(SimStruct *S, const char* message, ...) {
 
 	va_list args;
 	va_start(args, message);
-
-	if (logLevel(S) <= DEBUG) {
-		char buf[MAX_MESSAGE_SIZE];
-		vsnprintf(buf, MAX_MESSAGE_SIZE, message, args);
-		strncat(buf, "\n", MAX_MESSAGE_SIZE);
-		ssPrintf(buf);
-	}
-
+	char buf[MAX_MESSAGE_SIZE];
+	vsnprintf(buf, MAX_MESSAGE_SIZE, message, args);
 	va_end(args);
+
+	logCall(S, buf);
+
+	//if (logLevel(S) <= DEBUG) {
+
+		//strncat(buf, "\n", MAX_MESSAGE_SIZE);
+		//logMessage(nullptr, DEBUG, nullptr, buf);
+		//ssPrintf(buf);
+	//}
+
 }
 
 static void setInput(SimStruct *S) {
@@ -418,11 +468,17 @@ static void update(SimStruct *S) {
 		// Work around for the event handling in Dymola FMUs:
 		bool timeEvent = time >= nextEventTime;
 
-		if (timeEvent && logLevel(S) <= DEBUG) ssPrintf("Time event at t=%.16g\n", time);
+		if (timeEvent/* && logLevel(S) <= DEBUG*/) {
+			logDebug(S, "Time event at t=%.16g", time);
+			//ssPrintf("Time event at t=%.16g\n", time);
+		}
 
 		bool stepEvent = model->completedIntegratorStep();
 
-		if (stepEvent && logLevel(S) <= DEBUG) ssPrintf("Step event at t=%.16g\n", time);
+		if (stepEvent/* && logLevel(S) <= DEBUG*/) {
+			logDebug(S, "Step event at t=%.16g\n", time);
+			//ssPrintf("Step event at t=%.16g\n", time);
+		}
 
 		bool stateEvent = false;
 
@@ -435,7 +491,7 @@ static void update(SimStruct *S) {
 			// check for state events
 			for (int i = 0; i < nz(S); i++) {
 
-				bool rising = (prez[i] < 0 && z[i] >= 0) || (prez[i] == 0 && z[i] > 0);
+				bool rising  = (prez[i] < 0 && z[i] >= 0) || (prez[i] == 0 && z[i] > 0);
 				bool falling = (prez[i] > 0 && z[i] <= 0) || (prez[i] == 0 && z[i] < 0);
 
 				if (rising || falling) {
@@ -484,7 +540,7 @@ static void update(SimStruct *S) {
 #if defined(MDL_CHECK_PARAMETERS) && defined(MATLAB_MEX_FILE)
 static void mdlCheckParameters(SimStruct *S) {
 
-	logDebug(S, "\nmdlCheckParameters() called on %s\n", ssGetPath(S));
+	logDebug(S, "mdlCheckParameters() called on %s", ssGetPath(S));
 
 	if (!mxIsChar(ssGetSFcnParam(S, fmiVersionParam)) || (fmiVersion(S) != "1.0" && fmiVersion(S) != "2.0")) {
         ssSetErrorStatus(S, "Parameter 1 (FMI version) must be one of '1.0' or '2.0'");
@@ -721,7 +777,7 @@ static void mdlCheckParameters(SimStruct *S) {
 
 static void mdlInitializeSizes(SimStruct *S) {
 
-	logDebug(S, "\nmdlInitializeSizes() called on %s\n", ssGetPath(S));
+	logDebug(S, "mdlInitializeSizes() called on %s", ssGetPath(S));
 
 	ssSetNumSFcnParams(S, numParams);
 
@@ -747,7 +803,7 @@ static void mdlInitializeSizes(SimStruct *S) {
 		DTypeId type = simulinkVariableType(S, inputPortTypesParam, i);
 		ssSetInputPortDataType(S, i, type);
 		ssSetInputPortDirectFeedThrough(S, i, directInput(S) || inputPortDirectFeedThrough(S, i)); // direct feed through
-		logDebug(S, "\nssSetInputPortDirectFeedThrough(S, %d, %d) called on %s\n", i, 1, ssGetPath(S));
+		logDebug(S, "ssSetInputPortDirectFeedThrough(S, %d, %d) called on %s", i, 1, ssGetPath(S));
 	}
 
 	if (!ssSetNumOutputPorts(S, ny(S))) return;
@@ -761,7 +817,7 @@ static void mdlInitializeSizes(SimStruct *S) {
 	ssSetNumSampleTimes(S, 1);
 	ssSetNumRWork(S, 2 * nz(S) + nuv(S)); // prez & z, preu
 	ssSetNumIWork(S, 0);
-	ssSetNumPWork(S, 1); // FMU
+	ssSetNumPWork(S, 2); // [FMU, logfile]
 	ssSetNumModes(S, 3); // [stateEvent, timeEvent, stepEvent]
 	ssSetNumNonsampledZCs(S, (runAsKind(S) == MODEL_EXCHANGE) ? nz(S) + 1 : 0);
 
@@ -774,7 +830,7 @@ static void mdlInitializeSizes(SimStruct *S) {
 
 static void mdlInitializeSampleTimes(SimStruct *S) {
 
-	logDebug(S, "\nmdlInitializeSampleTimes() called on %s\n", ssGetPath(S));
+	logDebug(S, "mdlInitializeSampleTimes() called on %s", ssGetPath(S));
 
 	if (runAsKind(S) == CO_SIMULATION) {
 		ssSetSampleTime(S, 0, sampleTime(S));
@@ -791,7 +847,7 @@ static void mdlInitializeSampleTimes(SimStruct *S) {
 #if defined(MDL_START)
 static void mdlStart(SimStruct *S) {
 
-	logDebug(S, "\nmdlStart() called on %s\n", ssGetPath(S));
+	logDebug(S, "mdlStart() called on %s", ssGetPath(S));
 
 	auto instanceName = ssGetPath(S);
 	auto time = ssGetT(S);
@@ -814,11 +870,13 @@ static void mdlStart(SimStruct *S) {
 
 	void **p = ssGetPWork(S);
 
+	p[1] = fopen("BouncingBall_fmi.txt", "a");
+
 	bool toleranceDefined = relativeTolerance(S) > 0;
 
 	auto level = logLevel(S);
 
-	FMU::setLogLevel(level);
+	FMU::setLogLevel(DEBUG);
 
 	bool loggingOn = level == DEBUG;
 
@@ -858,6 +916,9 @@ static void mdlStart(SimStruct *S) {
 			fmu = new FMU2Model(guid(S), modelIdentifier(S), unzipDirectory(S), instanceName, calloc, free);
 		}
 
+		fmu->m_fmiCallLogger = logFMICall;
+		fmu->setLogFMICalls(true);
+
 		fmu->instantiate(loggingOn);
 		fmu->setErrorDiagnostics(diagnostics);
 		setStartValues(S, fmu);
@@ -865,8 +926,12 @@ static void mdlStart(SimStruct *S) {
 		fmu->enterInitializationMode();
 		fmu->exitInitializationMode();
 
+		fmu->m_userData = S;
+
 		p[0] = fmu;
 	}
+
+
 }
 #endif /* MDL_START */
 
@@ -875,7 +940,7 @@ static void mdlStart(SimStruct *S) {
 #if defined(MDL_INITIALIZE_CONDITIONS)
 static void mdlInitializeConditions(SimStruct *S) {
 
-	logDebug(S, "\nmdlInitializeConditions() called on %s\n", ssGetPath(S));
+	logDebug(S, "mdlInitializeConditions() called on %s", ssGetPath(S));
 
 	auto model = component<Model>(S);
 
@@ -902,7 +967,7 @@ static void mdlInitializeConditions(SimStruct *S) {
 
 static void mdlOutputs(SimStruct *S, int_T tid) {
 
-	logDebug(S, "\nmdlOutputs() called on %s (t=%.16g, %s)\n", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
+	logDebug(S, "mdlOutputs() called on %s (t=%.16g, %s)", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
 
 	auto fmu = component<FMU>(S);
 
@@ -961,7 +1026,7 @@ static void mdlOutputs(SimStruct *S, int_T tid) {
 #if defined(MDL_UPDATE)
 static void mdlUpdate(SimStruct *S, int_T tid) {
 
-	logDebug(S, "\nmdlUpdate() called on %s (t=%.16g, %s)\n", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
+	logDebug(S, "mdlUpdate() called on %s (t=%.16g, %s)", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
 
 	// record the inputs
 	real_T *preu = ssGetRWork(S) + 2 * nz(S);
@@ -1004,7 +1069,7 @@ static void mdlUpdate(SimStruct *S, int_T tid) {
 #if defined(MDL_ZERO_CROSSINGS) && (defined(MATLAB_MEX_FILE) || defined(NRT))
 static void mdlZeroCrossings(SimStruct *S) {
 
-	logDebug(S, "\nmdlZeroCrossings() called on %s (t=%.16g, %s)\n", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
+	logDebug(S, "mdlZeroCrossings() called on %s (t=%.16g, %s)", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
 
 	auto model = component<Model>(S);
 
@@ -1026,7 +1091,7 @@ static void mdlZeroCrossings(SimStruct *S) {
 #if defined(MDL_DERIVATIVES)
 static void mdlDerivatives(SimStruct *S) {
 
-	logDebug(S, "\nmdlDerivatives() called on %s (t=%.16g, %s) \n", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
+	logDebug(S, "mdlDerivatives() called on %s (t=%.16g, %s)", ssGetPath(S), ssGetT(S), ssIsMajorTimeStep(S) ? "major" : "minor");
 
 	auto model = component<Model>(S);
 
@@ -1043,7 +1108,7 @@ static void mdlDerivatives(SimStruct *S) {
 
 static void mdlTerminate(SimStruct *S) {
 
-	logDebug(S, "\nmdlTerminate() called on %s\n", ssGetPath(S));
+	logDebug(S, "mdlTerminate() called on %s", ssGetPath(S));
 
 	delete component<FMU>(S);
 }
