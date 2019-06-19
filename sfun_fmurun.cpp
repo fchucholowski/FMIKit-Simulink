@@ -26,8 +26,6 @@ using namespace fmikit;
 
 #define MAX_MESSAGE_SIZE 4096
 
-//static FILE *logfile;
-
 enum Parameter {
 
 	fmiVersionParam,
@@ -60,20 +58,13 @@ enum Parameter {
 
 };
 
-string getStringParam(SimStruct *S, int index)
-{
+static string getStringParam(SimStruct *S, int index) {
 	auto pa = ssGetSFcnParam(S, index);
-	auto data = (char *)mxGetData(pa);
-	auto lendata = mxGetNumberOfElements(pa);
-
 	size_t buflen = mxGetN(pa) * sizeof(mxChar) + 1;
 	auto str = (char *)mxMalloc(buflen);
-	auto status = mxGetString(pa, str, buflen);
-
+	mxGetString(pa, str, buflen);
 	string cppstr(str);
-
 	mxFree(str);
-
 	return cppstr;
 }
 
@@ -98,6 +89,14 @@ static string unzipDirectory(SimStruct *S) {
 inline fmikit::LogLevel logLevel(SimStruct *S) { 
 	return DEBUG;
 	//return static_cast<fmikit::LogLevel>(static_cast<int>(mxGetScalar(ssGetSFcnParam(S, logLevelParam )))); 
+}
+
+static string logFile(SimStruct *S) {
+    return ""; //BouncingBall_fmi.txt";
+}
+
+static bool logFMICalls(SimStruct *S) {
+    return true;
 }
 
 static string errorDiagnostics(SimStruct *S) {
@@ -186,30 +185,32 @@ template<typename T> T *component(SimStruct *S) {
 	return dynamic_cast<T *>(fmu);
 }
 
-static void logMessage(FMU *instance, LogLevel level, const char* category, const char* message) {
-
-	//auto file = fopen("BouncingBall_log.txt", "a");
-
-	//if (file) {
-	//	fprintf(file, message);
-	//	fprintf(file, "\n");
-	//}
-	//fclose(file);
-
-	//ssPrintf(message);
-	//ssPrintf("\n");
+static void logCall(SimStruct *S, const char* message) {
+    
+    FILE *logfile = nullptr;
+    
+	void **p = ssGetPWork(S);
+    
+    if (p) {
+        logfile = static_cast<FILE *>(p[1]);
+    }
+    
+    if (logfile) {
+        fputs(message, logfile);
+        fputs("\n", logfile);
+        fflush(logfile);
+    } else {
+        ssPrintf(message);
+        ssPrintf("\n");
+    }
 }
 
-static void logCall(SimStruct *S, const char* message) {
-
-	void **p = ssGetPWork(S);
-	FILE *logfile = static_cast<FILE *>(p[1]);
-
-	if (logfile) {
-		fprintf(logfile, message);
-		fprintf(logfile, "\n");
-		fflush(logfile);
-	}
+static void logFMUMessage(FMU *instance, LogLevel level, const char* category, const char* message) {
+    
+    if (instance && instance->m_userData) {
+        SimStruct *S = static_cast<SimStruct *>(instance->m_userData);
+        logCall(S, message);
+    }
 }
 
 static void logFMICall(FMU *instance, const char* message) {
@@ -218,39 +219,20 @@ static void logFMICall(FMU *instance, const char* message) {
 		SimStruct *S = static_cast<SimStruct *>(instance->m_userData);
 		logCall(S, message);
 	}
-
-	////auto logfile = fopen("BouncingBall_fmi.txt", "a");
-
-	//SimStruct *S = static_cast<SimStruct *>(instance->m_userData);
-	//void **p = ssGetPWork(S);
-	//FILE *logfile = static_cast<FILE *>(p[1]);
-
-	//if (logfile) {
-	//	fprintf(logfile, message);
-	//	fprintf(logfile, "\n");
-	//	fflush(logfile);
-	//}
-
-	////fclose(file);
 }
 
+/* log mdl*() and fmi*() calls */
 static void logDebug(SimStruct *S, const char* message, ...) {
+    
+    if (logFMICalls(S)) {
+        va_list args;
+        va_start(args, message);
+        char buf[MAX_MESSAGE_SIZE];
+        vsnprintf(buf, MAX_MESSAGE_SIZE, message, args);
+        va_end(args);
 
-	va_list args;
-	va_start(args, message);
-	char buf[MAX_MESSAGE_SIZE];
-	vsnprintf(buf, MAX_MESSAGE_SIZE, message, args);
-	va_end(args);
-
-	logCall(S, buf);
-
-	//if (logLevel(S) <= DEBUG) {
-
-		//strncat(buf, "\n", MAX_MESSAGE_SIZE);
-		//logMessage(nullptr, DEBUG, nullptr, buf);
-		//ssPrintf(buf);
-	//}
-
+        logCall(S, buf);
+    }
 }
 
 static void setInput(SimStruct *S) {
@@ -847,12 +829,25 @@ static void mdlInitializeSampleTimes(SimStruct *S) {
 #if defined(MDL_START)
 static void mdlStart(SimStruct *S) {
 
+    void **p = ssGetPWork(S);
+    
+    if (p[1]) {
+        fclose(static_cast<FILE *>(p[1]));
+        p[1] = nullptr;
+    }
+    
+    auto logfile = logFile(S);
+    
+    if (!logfile.empty()) {
+        p[1] = fopen(logfile.c_str(), "w");
+    }
+    
 	logDebug(S, "mdlStart() called on %s", ssGetPath(S));
 
 	auto instanceName = ssGetPath(S);
 	auto time = ssGetT(S);
 
-	FMU::m_messageLogger = logMessage;
+	FMU::m_messageLogger = logFMUMessage;
 
 	char libraryFile[1000];
 	getLibraryPath(S, libraryFile);
@@ -867,10 +862,6 @@ static void mdlStart(SimStruct *S) {
 		return;
 	}
 #endif
-
-	void **p = ssGetPWork(S);
-
-	p[1] = fopen("BouncingBall_fmi.txt", "a");
 
 	bool toleranceDefined = relativeTolerance(S) > 0;
 
