@@ -33,8 +33,10 @@ enum Parameter {
 	guidParam,
 	modelIdentifierParam,
 	unzipDirectoryParam,
-	logLevelParam,
-	errorDiagnosticsParam,
+    debugLoggingParam,
+    logFMICallsParam,
+    logLevelParam,
+    logFileParam,
 	relativeToleranceParam,
 	sampleTimeParam,
 	offsetTimeParam,
@@ -72,7 +74,7 @@ static string fmiVersion(SimStruct *S) {
 	return getStringParam(S, fmiVersionParam);
 }
 
-inline fmikit::Kind runAsKind(SimStruct *S) { return static_cast<fmikit::Kind>( static_cast<int>( mxGetScalar( ssGetSFcnParam(S, runAsKindParam) ) ) ); }
+static fmikit::Kind runAsKind(SimStruct *S) { return static_cast<fmikit::Kind>(static_cast<int>( mxGetScalar( ssGetSFcnParam(S, runAsKindParam) ) ) ); }
 
 static string guid(SimStruct *S) {
 	return getStringParam(S, guidParam);
@@ -86,36 +88,52 @@ static string unzipDirectory(SimStruct *S) {
 	return getStringParam(S, unzipDirectoryParam);
 }
 
-inline fmikit::LogLevel logLevel(SimStruct *S) { 
-	return DEBUG;
-	//return static_cast<fmikit::LogLevel>(static_cast<int>(mxGetScalar(ssGetSFcnParam(S, logLevelParam )))); 
-}
-
-static string logFile(SimStruct *S) {
-    return ""; //BouncingBall_fmi.txt";
+static bool debugLogging(SimStruct *S) {
+    return mxGetScalar(ssGetSFcnParam(S, debugLoggingParam));
 }
 
 static bool logFMICalls(SimStruct *S) {
-    return true;
+    return mxGetScalar(ssGetSFcnParam(S, logFMICallsParam));
 }
 
-static string errorDiagnostics(SimStruct *S) {
-	return getStringParam(S, errorDiagnosticsParam);
+static fmikit::LogLevel logLevel(SimStruct *S) {
+    int level = static_cast<int>(mxGetScalar(ssGetSFcnParam(S, logLevelParam)));
+    return static_cast<fmikit::LogLevel>(level);
 }
 
-inline double relativeTolerance(SimStruct *S) { return mxGetScalar(ssGetSFcnParam(S, relativeToleranceParam)); }
+static string logFile(SimStruct *S) {
+    return getStringParam(S, logFileParam);
+}
 
-inline double sampleTime(SimStruct *S) { return mxGetScalar(ssGetSFcnParam(S, sampleTimeParam)); }
+//static string errorDiagnostics(SimStruct *S) {
+//    return getStringParam(S, errorDiagnosticsParam);
+//}
 
-inline double offsetTime(SimStruct *S) { return mxGetScalar(ssGetSFcnParam(S, offsetTimeParam)); }
+static double relativeTolerance(SimStruct *S) {
+    return mxGetScalar(ssGetSFcnParam(S, relativeToleranceParam));
+}
+
+static double sampleTime(SimStruct *S) {
+    return mxGetScalar(ssGetSFcnParam(S, sampleTimeParam));
+}
+
+static double offsetTime(SimStruct *S) {
+    return mxGetScalar(ssGetSFcnParam(S, offsetTimeParam));
+}
 
 // number of continuous states
-inline int nx(SimStruct *S) { return static_cast<int>(mxGetScalar(ssGetSFcnParam(S, nxParam))); }
+static int nx(SimStruct *S) {
+    return static_cast<int>(mxGetScalar(ssGetSFcnParam(S, nxParam)));
+}
 
 // number of zero-crossings
-inline int nz(SimStruct *S) { return static_cast<int>(mxGetScalar(ssGetSFcnParam(S, nzParam))); }
+static int nz(SimStruct *S) {
+    return static_cast<int>(mxGetScalar(ssGetSFcnParam(S, nzParam)));
+}
 
-inline int nScalarStartValues(SimStruct *S) { return mxGetNumberOfElements(ssGetSFcnParam(S, scalarStartVRsParam)); }
+static int nScalarStartValues(SimStruct *S) {
+    return mxGetNumberOfElements(ssGetSFcnParam(S, scalarStartVRsParam));
+}
 
 static int inputPortWidth(SimStruct *S, int index) {
 	auto portWidths = static_cast<real_T *>(mxGetData(ssGetSFcnParam(S, inputPortWidthsParam)));
@@ -548,66 +566,81 @@ static void mdlCheckParameters(SimStruct *S) {
 		ssSetErrorStatus(S, "Parameter 5 (unzip directory) must be a string");
 		return;
 	}
-
-	if (!mxIsNumeric(ssGetSFcnParam(S, logLevelParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, logLevelParam)) != 1 || (logLevel(S) != 1 && logLevel(S) != 2 && logLevel(S) != 3)) {
-        ssSetErrorStatus(S, "Parameter 6 (log level) must be one of 1 (= DEBUG), 2 (= INFO) or 3 (= WARNING)");
+    
+    if (!mxIsNumeric(ssGetSFcnParam(S, debugLoggingParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, logLevelParam)) != 1) {
+        ssSetErrorStatus(S, "Parameter 6 (debug logging) must be a scalar");
         return;
     }
 
-	if (!mxIsChar(ssGetSFcnParam(S, errorDiagnosticsParam)) || (errorDiagnostics(S) != "ignore" && errorDiagnostics(S) != "warning" && errorDiagnostics(S) != "error")) {
-		ssSetErrorStatus(S, "Parameter 7 (error diagnostics) must be one of 'ignore', 'warning' or 'error'");
-		return;
-	}
+    if (!mxIsNumeric(ssGetSFcnParam(S, logFMICallsParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, logLevelParam)) != 1) {
+        ssSetErrorStatus(S, "Parameter 7 (log FMI calls) must be a scalar");
+        return;
+    }
+    
+    if (!mxIsNumeric(ssGetSFcnParam(S, logLevelParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, logLevelParam)) != 1 || (logLevel(S) != 0 &&logLevel(S) != 1 && logLevel(S) != 2 && logLevel(S) != 3)) {
+        ssSetErrorStatus(S, "Parameter 8 (log level) must be one of 0 (= info), 1 (= warning), 2 (= error) or 3 (= none)");
+        return;
+    }
+    
+    if (!mxIsChar(ssGetSFcnParam(S, logFileParam))) {
+        ssSetErrorStatus(S, "Parameter 9 (log file) must be a string");
+        return;
+    }
+
+//    if (!mxIsChar(ssGetSFcnParam(S, errorDiagnosticsParam)) || (errorDiagnostics(S) != "ignore" && errorDiagnostics(S) != "warning" && errorDiagnostics(S) != "error")) {
+//        ssSetErrorStatus(S, "Parameter 10 (error diagnostics) must be one of 'ignore', 'warning' or 'error'");
+//        return;
+//    }
 
 	if (!mxIsNumeric(ssGetSFcnParam(S, relativeToleranceParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, relativeToleranceParam)) != 1) {
-        ssSetErrorStatus(S, "Parameter 8 (relative tolerance) must be numeric");
+        ssSetErrorStatus(S, "Parameter 11 (relative tolerance) must be numeric");
         return;
     }
 
 	if (!mxIsNumeric(ssGetSFcnParam(S, sampleTimeParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, sampleTimeParam)) != 1) {
-        ssSetErrorStatus(S, "Parameter 9 (sample time) must be numeric");
+        ssSetErrorStatus(S, "Parameter 12 (sample time) must be numeric");
         return;
     }
 
 	if (!mxIsNumeric(ssGetSFcnParam(S, offsetTimeParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, offsetTimeParam)) != 1) {
-		ssSetErrorStatus(S, "Parameter 10 (offset time) must be numeric");
+		ssSetErrorStatus(S, "Parameter 13 (offset time) must be numeric");
 		return;
 	}
 
 	if (!mxIsNumeric(ssGetSFcnParam(S, nxParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, nxParam)) != 1) {
-        ssSetErrorStatus(S, "Parameter 11 (number of continuous states) must be a scalar");
+        ssSetErrorStatus(S, "Parameter 14 (number of continuous states) must be a scalar");
         return;
     }
 
 	if (!mxIsNumeric(ssGetSFcnParam(S, nzParam)) || mxGetNumberOfElements(ssGetSFcnParam(S, nzParam)) != 1) {
-        ssSetErrorStatus(S, "Parameter 12 (number of event indicators) must be a scalar");
+        ssSetErrorStatus(S, "Parameter 15 (number of event indicators) must be a scalar");
         return;
     }
 
 	if (!mxIsDouble(ssGetSFcnParam(S, scalarStartTypesParam))) {
-    	ssSetErrorStatus(S, "Parameter 13 (scalar start value types) must be a double array");
+    	ssSetErrorStatus(S, "Parameter 16 (scalar start value types) must be a double array");
     	return;
     }
 
 	if (!mxIsDouble(ssGetSFcnParam(S, scalarStartVRsParam))) {
-    	ssSetErrorStatus(S, "Parameter 14 (scalar start value references) must be a double array");
+    	ssSetErrorStatus(S, "Parameter 17 (scalar start value references) must be a double array");
     	return;
     }
 
 	if (mxGetNumberOfElements(ssGetSFcnParam(S, scalarStartVRsParam)) != mxGetNumberOfElements(ssGetSFcnParam(S, scalarStartTypesParam))) {
-        ssSetErrorStatus(S, "The number of elements in parameter 13 (scalar start value references) and parameter 12 (scalar start value types) must be equal");
+        ssSetErrorStatus(S, "The number of elements in parameter 13 (scalar start value references) and parameter 17 (scalar start value types) must be equal");
         return;
     }
 
 	// TODO: check VRS values!
 
 	if (!mxIsDouble(ssGetSFcnParam(S, scalarStartValuesParam))) {
-        ssSetErrorStatus(S, "Parameter 15 (scalar start values) must be a double array");
+        ssSetErrorStatus(S, "Parameter 18 (scalar start values) must be a double array");
         return;
     }
 
 	if (mxGetNumberOfElements(ssGetSFcnParam(S, scalarStartTypesParam)) != mxGetNumberOfElements(ssGetSFcnParam(S, scalarStartValuesParam))) {
-        ssSetErrorStatus(S, "The number of elements in parameter 15 (scalar start values) and parameter 12 (scalar start value types) must be equal");
+        ssSetErrorStatus(S, "The number of elements in parameter 18 (scalar start values) and parameter 12 (scalar start value types) must be equal");
         return;
     }
 
@@ -865,31 +898,31 @@ static void mdlStart(SimStruct *S) {
 
 	bool toleranceDefined = relativeTolerance(S) > 0;
 
-	auto level = logLevel(S);
+//    auto level = logLevel(S);
 
 	FMU::setLogLevel(DEBUG);
 
-	bool loggingOn = level == DEBUG;
+    bool loggingOn = debugLogging(S); //level == DEBUG;
 
-	ErrorDiagnostics diagnostics = ErrorDiagnosticsError;
+//    ErrorDiagnostics diagnostics = ErrorDiagnosticsError;
 
-	if (errorDiagnostics(S) == "ignore") {
-		diagnostics = ErrorDiagnosticsIgnore;
-	} else if (errorDiagnostics(S) == "warning") {
-		diagnostics = ErrorDiagnosticsWarning;
-	}
+//    if (errorDiagnostics(S) == "ignore") {
+//        diagnostics = ErrorDiagnosticsIgnore;
+//    } else if (errorDiagnostics(S) == "warning") {
+//        diagnostics = ErrorDiagnosticsWarning;
+//    }
 
 	if (fmiVersion(S) == "1.0") {
 
 		if (runAsKind(S) == CO_SIMULATION) {
 			auto slave = new FMU1Slave(guid(S), modelIdentifier(S), unzipDirectory(S), instanceName, 0.0, loggingOn, calloc, free);
-			slave->setErrorDiagnostics(diagnostics);
+//            slave->setErrorDiagnostics(diagnostics);
 			setStartValues(S, slave);
 			slave->initializeSlave(time, true, ssGetTFinal(S));
 			p[0] = slave;
 		} else {
 			auto model = new FMU1Model(guid(S), modelIdentifier(S), unzipDirectory(S), instanceName, loggingOn, calloc, free);
-			model->setErrorDiagnostics(diagnostics);
+//            model->setErrorDiagnostics(diagnostics);
 			setStartValues(S, model);
 			model->setTime(time);
 			model->initialize(toleranceDefined, relativeTolerance(S));
@@ -911,7 +944,7 @@ static void mdlStart(SimStruct *S) {
 		fmu->setLogFMICalls(true);
 
 		fmu->instantiate(loggingOn);
-		fmu->setErrorDiagnostics(diagnostics);
+//        fmu->setErrorDiagnostics(diagnostics);
 		setStartValues(S, fmu);
 		fmu->setupExperiment(toleranceDefined, relativeTolerance(S), time, true, ssGetTFinal(S));
 		fmu->enterInitializationMode();

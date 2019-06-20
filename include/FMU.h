@@ -54,11 +54,11 @@ namespace fmikit {
         FATAL = 4
     };
 
-	enum ErrorDiagnostics {
-		ErrorDiagnosticsIgnore,
-		ErrorDiagnosticsWarning,
-		ErrorDiagnosticsError
-	};
+    enum ErrorDiagnostics {
+        ErrorDiagnosticsIgnore,
+        ErrorDiagnosticsWarning,
+        ErrorDiagnosticsError
+    };
 
 	enum Type {
 		REAL,
@@ -115,7 +115,7 @@ namespace fmikit {
 		static const char *platform();
 		static LogLevel logLevel() { return m_logLevel; }
 		static void setLogLevel(LogLevel level) { m_logLevel = level; }
-		static void setErrorDiagnostics(ErrorDiagnostics m_errorDiagnostics) { m_errorDiagnostics = m_errorDiagnostics; }
+//        static void setErrorDiagnostics(ErrorDiagnostics errorDiagnostics) { m_errorDiagnostics = errorDiagnostics; }
 
 		void *m_userData = nullptr;
 
