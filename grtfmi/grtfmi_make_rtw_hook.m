@@ -5,6 +5,11 @@ switch hookMethod
     case 'after_make'
 
         current_dir = pwd;
+        
+        % remove FMU build directory from previous build
+        if isfolder('FMUArchive')
+            rmdir('FMUArchive', 's');
+        end
 
         % remove fmiwrapper.inc for referenced models
         if ~strcmp(current_dir(end-11:end), '_grt_fmi_rtw')
@@ -24,16 +29,56 @@ switch hookMethod
         generator = get_param(modelName, 'CMakeGenerator');
         source_code_fmu = get_param(modelName, 'SourceCodeFMU');
         fmi_version = get_param(modelName, 'FMIVersion');
+        
+        % copy extracted nested FMUs
+        nested_fmus = find_system(modelName, 'ReferenceBlock', 'FMIKit_blocks/FMU');
+        
+        if ~isempty(nested_fmus)
+            disp('### Copy nested FMUs')
+            for i = 1:numel(nested_fmus)
+                nested_fmu = nested_fmus{i};
+                unzipdir = FMIKit.getUnzipDirectory(nested_fmu);
+                user_data = get_param(nested_fmu, 'UserData');
+                dialog = FMIKit.showBlockDialog(nested_fmu, false);
+                if user_data.runAsKind == 0
+                    model_identifier = char(dialog.modelDescription.coSimulation.modelIdentifier);
+                else
+                    model_identifier = char(dialog.modelDescription.modelExchange.modelIdentifier);
+                end
+                copyfile(unzipdir, fullfile('FMUArchive', 'resources', model_identifier));
+            end
+        end
+        
+        % copy resources
+        resources = get_param(gcs, 'FMUResources');
+        resources = regexp(strtrim(resources), '\s+', 'split');
+        if ~isempty(resources)
+            disp('### Copy resources')
+            for i = 1:numel(resources)
+                resource = resources{i};
+                disp(['Copying ' resource ' to resources'])
+                if isfile(resource)
+                    copyfile(resources{i}, fullfile('FMUArchive', 'resources'));
+                else
+                    [~, folder, ~] = fileparts(resource);
+                    copyfile(resource, fullfile('FMUArchive', 'resources', folder));
+                end
+            end
+        end
 
         disp('### Running CMake generator')
-        resources      = get_param(gcs, 'FMUResources');
-        resources      = regexp(resources, '\s+', 'split');
+%         resources      = get_param(gcs, 'FMUResources');
+%         resources      = build_cmake_list(resources);
+%         %resources      = regexp(resources, '\s+', 'split');
         custom_include = get_param(gcs, 'CustomInclude');
-        custom_include = regexp(custom_include, '\s+', 'split');
+        custom_include = build_cmake_list(custom_include);
+%         custom_include = regexp(custom_include, '\s+', 'split');
         source_files   = get_param(gcs, 'CustomSource');
+%         source_files   = build_cmake_list(source_files);
         source_files   = regexp(source_files, '\s+', 'split');
         custom_library = get_param(gcs, 'CustomLibrary');
-        custom_library = regexp(custom_library, '\s+', 'split');
+        custom_library = build_cmake_list(custom_library);
+        %custom_library = regexp(custom_library, '"\s+"', 'split');
         custom_source  = {};
         
         for i = 1:length(source_files)
@@ -92,10 +137,10 @@ switch hookMethod
         fprintf(fid, 'MODEL:STRING=%s\n', modelName);
         fprintf(fid, 'RTW_DIR:STRING=%s\n', strrep(pwd, '\', '/'));
         fprintf(fid, 'MATLAB_ROOT:STRING=%s\n', strrep(matlabroot, '\', '/'));
-        fprintf(fid, 'RESOURCES:STRING=%s\n', build_path_list(resources));
-        fprintf(fid, 'CUSTOM_INCLUDE:STRING=%s\n', build_path_list(custom_include));
+%         fprintf(fid, 'RESOURCES:STRING=%s\n', resources);
+        fprintf(fid, 'CUSTOM_INCLUDE:STRING=%s\n', custom_include);
         fprintf(fid, 'CUSTOM_SOURCE:STRING=%s\n', build_path_list(custom_source));
-        fprintf(fid, 'CUSTOM_LIBRARY:STRING=%s\n', build_path_list(custom_library));
+        fprintf(fid, 'CUSTOM_LIBRARY:STRING=%s\n', custom_library);
         fprintf(fid, 'SOURCE_CODE_FMU:BOOL=%s\n', upper(source_code_fmu));
         fprintf(fid, 'SIMSCAPE:BOOL=%s\n', upper(simscape_blocks));
         fprintf(fid, 'FMI_VERSION:STRING=%s\n', fmi_version);
@@ -116,6 +161,38 @@ switch hookMethod
 end
 
 end
+
+
+function list = build_cmake_list(p)
+% convert a Simulink space separated path list into a CMake path list
+
+p = strtrim(p);
+
+list = '';
+
+join = false;
+
+for i=1:numel(p)
+  
+  c = p(i);
+  
+  if c == '"'
+    join = ~join;
+    continue
+  end
+  
+  if c == ' ' && ~join
+    c = ';';
+  end
+  
+  list(end+1) = c;
+
+end
+
+list = strrep(list, '\', '/');
+
+end
+
 
 function list = build_path_list(segments)
 

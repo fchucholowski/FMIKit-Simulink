@@ -210,6 +210,7 @@ target_compile_definitions(${MODEL} PUBLIC
   RT
   USE_RTMODEL
   NO_FMI_FUNCTION_PREFIX
+  GRTFMI
 )
 
 target_link_libraries(${MODEL} ${CUSTOM_LIBRARY})
@@ -226,11 +227,6 @@ file(WRITE ${RTW_DIR}/Temp/simstruc_rt.h "
 ")
 file(APPEND ${RTW_DIR}/Temp/simstruc_rt.h "${CONTENTS}")
 
-# remove FMU_BUILD_DIR from previous build
-add_custom_command(TARGET ${MODEL} POST_BUILD COMMAND ${CMAKE_COMMAND} -E remove_directory
-  ${FMU_BUILD_DIR}
-)
-
 # modelDescription.xml
 add_custom_command(TARGET ${MODEL} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
   ${RTW_DIR}/modelDescription.xml
@@ -245,17 +241,20 @@ add_custom_command(TARGET ${MODEL} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
 
 set (ARCHIVE_FILES modelDescription.xml binaries)
 
-if (RESOURCES)
-  # copy resources
-  foreach (RESOURCE_FILE ${RESOURCES})
-    get_filename_component(BASE_NAME ${RESOURCE_FILE} NAME)
-    add_custom_command(TARGET ${MODEL} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-      ${RESOURCE_FILE}
-      ${FMU_BUILD_DIR}/resources/${BASE_NAME}
-    )
-  endforeach(RESOURCE_FILE)
+# if (RESOURCES)
+#   # copy resources
+#   foreach (RESOURCE_FILE ${RESOURCES})
+#     get_filename_component(BASE_NAME ${RESOURCE_FILE} NAME)
+#     add_custom_command(TARGET ${MODEL} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
+#       ${RESOURCE_FILE}
+#       ${FMU_BUILD_DIR}/resources/${BASE_NAME}
+#     )
+#   endforeach(RESOURCE_FILE)
+#
+#   # sources directory
 
-  # sources directory
+if (EXISTS ${FMU_BUILD_DIR}/resources)
+  # add resources directory to archive
   set (ARCHIVE_FILES ${ARCHIVE_FILES} resources)
 endif ()
 
