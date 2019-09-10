@@ -45,6 +45,7 @@ switch hookMethod
                 else
                     model_identifier = char(dialog.modelDescription.modelExchange.modelIdentifier);
                 end
+                disp(['Copying ' unzipdir ' to resources'])                
                 copyfile(unzipdir, fullfile('FMUArchive', 'resources', model_identifier));
             end
         end
@@ -67,18 +68,12 @@ switch hookMethod
         end
 
         disp('### Running CMake generator')
-%         resources      = get_param(gcs, 'FMUResources');
-%         resources      = build_cmake_list(resources);
-%         %resources      = regexp(resources, '\s+', 'split');
         custom_include = get_param(gcs, 'CustomInclude');
         custom_include = build_cmake_list(custom_include);
-%         custom_include = regexp(custom_include, '\s+', 'split');
         source_files   = get_param(gcs, 'CustomSource');
-%         source_files   = build_cmake_list(source_files);
         source_files   = regexp(source_files, '\s+', 'split');
         custom_library = get_param(gcs, 'CustomLibrary');
         custom_library = build_cmake_list(custom_library);
-        %custom_library = regexp(custom_library, '"\s+"', 'split');
         custom_source  = {};
         
         for i = 1:length(source_files)
@@ -137,7 +132,6 @@ switch hookMethod
         fprintf(fid, 'MODEL:STRING=%s\n', modelName);
         fprintf(fid, 'RTW_DIR:STRING=%s\n', strrep(pwd, '\', '/'));
         fprintf(fid, 'MATLAB_ROOT:STRING=%s\n', strrep(matlabroot, '\', '/'));
-%         fprintf(fid, 'RESOURCES:STRING=%s\n', resources);
         fprintf(fid, 'CUSTOM_INCLUDE:STRING=%s\n', custom_include);
         fprintf(fid, 'CUSTOM_SOURCE:STRING=%s\n', build_path_list(custom_source));
         fprintf(fid, 'CUSTOM_LIBRARY:STRING=%s\n', custom_library);

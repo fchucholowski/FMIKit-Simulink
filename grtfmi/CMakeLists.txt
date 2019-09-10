@@ -8,7 +8,6 @@ set(CUSTOM_SOURCE "" CACHE STRING "Additional source files")
 set(CUSTOM_LIBRARY "" CACHE STRING "Additional static libraries")
 set(SOURCE_CODE_FMU ON CACHE BOOL "Copy sources to FMU archive")
 set(SIMSCAPE OFF CACHE BOOL "Model contains Simscape blocks")
-set(RESOURCES "" CACHE STRING "Files to copy to the resources directory of the FMU")
 set(FMU_BUILD_DIR FMUArchive)
 set(FMI_VERSION 2 CACHE STRING "FMI Version")
 set_property(CACHE FMI_VERSION PROPERTY STRINGS 2 3)
@@ -241,20 +240,7 @@ add_custom_command(TARGET ${MODEL} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
 
 set (ARCHIVE_FILES modelDescription.xml binaries)
 
-# if (RESOURCES)
-#   # copy resources
-#   foreach (RESOURCE_FILE ${RESOURCES})
-#     get_filename_component(BASE_NAME ${RESOURCE_FILE} NAME)
-#     add_custom_command(TARGET ${MODEL} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy
-#       ${RESOURCE_FILE}
-#       ${FMU_BUILD_DIR}/resources/${BASE_NAME}
-#     )
-#   endforeach(RESOURCE_FILE)
-#
-#   # sources directory
-
 if (EXISTS ${FMU_BUILD_DIR}/resources)
-  # add resources directory to archive
   set (ARCHIVE_FILES ${ARCHIVE_FILES} resources)
 endif ()
 
