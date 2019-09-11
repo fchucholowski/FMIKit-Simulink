@@ -53,7 +53,7 @@ switch hookMethod
         % copy resources
         resources = get_param(gcs, 'FMUResources');
         resources = regexp(strtrim(resources), '\s+', 'split');
-        if ~isempty(resources)
+        if ~all(cellfun(@isempty, resources))
             disp('### Copy resources')
             for i = 1:numel(resources)
                 resource = resources{i};
@@ -70,19 +70,11 @@ switch hookMethod
         disp('### Running CMake generator')
         custom_include = get_param(gcs, 'CustomInclude');
         custom_include = build_cmake_list(custom_include);
-        source_files   = get_param(gcs, 'CustomSource');
-        source_files   = regexp(source_files, '\s+', 'split');
         custom_library = get_param(gcs, 'CustomLibrary');
         custom_library = build_cmake_list(custom_library);
-        custom_source  = {};
+        custom_source  = get_param(gcs, 'CustomSource');
+        custom_source  = build_cmake_list(custom_source);
         
-        for i = 1:length(source_files)
-             source_file = which(source_files{i});
-             if ~isempty(source_file)
-                custom_source{end+1} = source_file; %#ok<AGROW>
-             end
-        end
-
         if isfield(buildOpts, 'libsToCopy') && ~isempty(buildOpts.libsToCopy)
             [parent_dir, ~, ~] = fileparts(pwd);
             custom_include{end+1} = fullfile(parent_dir, 'slprj', 'grtfmi', '_sharedutils');
@@ -114,7 +106,7 @@ switch hookMethod
             for j = 1:numel(src_file_ext)
                 source_file = which([modules{i} src_file_ext{j}]);
                 if ~isempty(source_file)
-                    custom_source{end+1} = source_file; %#ok<AGROW>
+                    custom_source = [custom_source ';' strrep(source_file, '\', '/')]; %#ok<AGROW>
                     break
                 end
             end
@@ -133,7 +125,7 @@ switch hookMethod
         fprintf(fid, 'RTW_DIR:STRING=%s\n', strrep(pwd, '\', '/'));
         fprintf(fid, 'MATLAB_ROOT:STRING=%s\n', strrep(matlabroot, '\', '/'));
         fprintf(fid, 'CUSTOM_INCLUDE:STRING=%s\n', custom_include);
-        fprintf(fid, 'CUSTOM_SOURCE:STRING=%s\n', build_path_list(custom_source));
+        fprintf(fid, 'CUSTOM_SOURCE:STRING=%s\n', custom_source);
         fprintf(fid, 'CUSTOM_LIBRARY:STRING=%s\n', custom_library);
         fprintf(fid, 'SOURCE_CODE_FMU:BOOL=%s\n', upper(source_code_fmu));
         fprintf(fid, 'SIMSCAPE:BOOL=%s\n', upper(simscape_blocks));
