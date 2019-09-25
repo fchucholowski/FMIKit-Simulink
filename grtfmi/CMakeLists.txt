@@ -15,6 +15,8 @@ set(COMPILER_OPTIMIZATION_LEVEL "Disabled" CACHE STRING "Compiler optimization l
 set_property(CACHE COMPILER_OPTIMIZATION_LEVEL PROPERTY STRINGS "Disabled" "Minimize size" "Maximize speed" "Full optimization" "Custom")
 set(COMPILER_OPTIMIZATION_FLAGS "/Ox" CACHE STRING "Custom compiler optimization flags")
 
+get_filename_component(CURRENT_DIR ${RTW_DIR} DIRECTORY)
+
 project (${MODEL})
 
 if ("${FMI_VERSION}" STREQUAL "3")
@@ -193,6 +195,7 @@ add_library (${MODEL} SHARED
 
 target_include_directories (${MODEL} PUBLIC
   ${CUSTOM_INCLUDE}
+  ${CURRENT_DIR}
   ${CMAKE_SOURCE_DIR}
   ${RTW_DIR}
   ${RTW_DIR}/../slprj/grtfmi/_sharedutils
