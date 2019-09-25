@@ -41,9 +41,9 @@ switch hookMethod
                 user_data = get_param(nested_fmu, 'UserData');
                 dialog = FMIKit.showBlockDialog(nested_fmu, false);
                 if user_data.runAsKind == 0
-                    model_identifier = char(dialog.modelDescription.coSimulation.modelIdentifier);
-                else
                     model_identifier = char(dialog.modelDescription.modelExchange.modelIdentifier);
+                else
+                    model_identifier = char(dialog.modelDescription.coSimulation.modelIdentifier);
                 end
                 disp(['Copying ' unzipdir ' to resources'])                
                 copyfile(unzipdir, fullfile('FMUArchive', 'resources', model_identifier), 'f');
