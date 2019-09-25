@@ -92,7 +92,7 @@ switch hookMethod
             modules = [buildOpts.noninlinedSFcns buildOpts.noninlinednonSFcns];
         else
             modules = {};
-            sfcns = find_system(modelName, 'BlockType', 'S-Function');
+            sfcns = find_system(modelName, 'LookUnderMasks', 'on', 'FollowLinks', 'on', 'BlockType', 'S-Function');
             for i = 1:numel(sfcns)
                 block = sfcns{i};
                 modules = [modules get_param(block, 'FunctionName') ...
