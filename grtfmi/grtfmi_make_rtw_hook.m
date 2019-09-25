@@ -7,7 +7,7 @@ switch hookMethod
         current_dir = pwd;
         
         % remove FMU build directory from previous build
-        if isfolder('FMUArchive')
+        if exist('FMUArchive', 'dir')
             rmdir('FMUArchive', 's');
         end
 
@@ -46,7 +46,7 @@ switch hookMethod
                     model_identifier = char(dialog.modelDescription.modelExchange.modelIdentifier);
                 end
                 disp(['Copying ' unzipdir ' to resources'])                
-                copyfile(unzipdir, fullfile('FMUArchive', 'resources', model_identifier));
+                copyfile(unzipdir, fullfile('FMUArchive', 'resources', model_identifier), 'f');
             end
         end
         
