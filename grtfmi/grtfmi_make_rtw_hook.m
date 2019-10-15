@@ -68,49 +68,14 @@ switch hookMethod
         end
 
         disp('### Running CMake generator')
-        custom_include = get_param(gcs, 'CustomInclude');
-        custom_include = build_cmake_list(custom_include);
-        custom_library = get_param(gcs, 'CustomLibrary');
-        custom_library = build_cmake_list(custom_library);
-        custom_source  = get_param(gcs, 'CustomSource');
-        custom_source  = build_cmake_list(custom_source);
         
-        if isfield(buildOpts, 'libsToCopy') && ~isempty(buildOpts.libsToCopy)
-            [parent_dir, ~, ~] = fileparts(pwd);
-            custom_include{end+1} = fullfile(parent_dir, 'slprj', 'grtfmi', '_sharedutils');
-            for i = 1:numel(buildOpts.libsToCopy)
-                [~, refmodel, ~] = fileparts(buildOpts.libsToCopy{i});
-                refmodel = refmodel(1:end-7);
-                custom_include{end+1} = fullfile(parent_dir, 'slprj', 'grtfmi', refmodel); %#ok<AGROW>
-                custom_source{end+1}  = fullfile(parent_dir, 'slprj', 'grtfmi', refmodel, [refmodel '.c']); %#ok<AGROW>
-            end
-        end
+        % get model sources
+        [custom_include, custom_source, custom_library] = ...
+            grtfmi_model_sources(modelName, pwd);
         
-        % get non-inlined S-Function modules
-        if all(isfield(buildOpts, {'noninlinedSFcns', 'noninlinednonSFcns'}))
-            % <= R2019a
-            modules = [buildOpts.noninlinedSFcns buildOpts.noninlinednonSFcns];
-        else
-            modules = {};
-            sfcns = find_system(modelName, 'LookUnderMasks', 'on', 'FollowLinks', 'on', 'BlockType', 'S-Function');
-            for i = 1:numel(sfcns)
-                block = sfcns{i};
-                modules = [modules get_param(block, 'FunctionName') ...
-                  regexp(get_param(block, 'SFunctionModules'), '\s+', 'split')]; %#ok<AGROW>
-            end
-        end
-                
-        % add S-function sources
-        for i = 1:numel(modules)
-            src_file_ext = {'.c', '.cc', '.cpp', '.cxx', '.c++'};
-            for j = 1:numel(src_file_ext)
-                source_file = which([modules{i} src_file_ext{j}]);
-                if ~isempty(source_file)
-                    custom_source = [custom_source ';' strrep(source_file, '\', '/')]; %#ok<AGROW>
-                    break
-                end
-            end
-        end
+        custom_include = cmake_list(custom_include);
+        custom_source  = cmake_list(custom_source);
+        custom_library = cmake_list(custom_library);
         
         % check for Simscape blocks
         if isempty(find_system(modelName, 'BlockType', 'SimscapeBlock'))
@@ -148,53 +113,17 @@ end
 
 end
 
+function joined = cmake_list(array)
 
-function list = build_cmake_list(p)
-% convert a Simulink space separated path list into a CMake path list
-
-p = strtrim(p);
-
-list = '';
-
-join = false;
-
-for i=1:numel(p)
-  
-  c = p(i);
-  
-  if c == '"'
-    join = ~join;
-    continue
-  end
-  
-  if c == ' ' && ~join
-    c = ';';
-  end
-  
-  list(end+1) = c;
-
+if isempty(array)
+    joined = '';
+    return
 end
 
-list = strrep(list, '\', '/');
+joined = array{1};
 
+for i = 2:numel(array)
+    joined = [joined ';' array{i}];  %#ok<ARGROW>
 end
-
-
-function list = build_path_list(segments)
-
-list = '';
-
-for i = 1:numel(segments)
-  segment = segments{i};
-  if ~isempty(segment)
-    if isempty(list)
-      list = segment;
-    else
-      list = [segment ';' list]; %#ok<AGROW>
-    end
-  end
-end
-
-list = strrep(list, '\', '/');
 
 end
