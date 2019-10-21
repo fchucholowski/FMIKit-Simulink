@@ -62,9 +62,9 @@ jobs:
   steps:
 
   - task: Maven@3
-  inputs:
-    mavenPomFile: 'Java/pom.xml'
-    goals: 'package'
+    inputs:
+      mavenPomFile: 'Java/pom.xml'
+      goals: 'package'
 
   - task: PublishPipelineArtifact@1
     inputs:
