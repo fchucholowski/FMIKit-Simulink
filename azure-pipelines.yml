@@ -1,59 +1,59 @@
 jobs:
 
-- job: win32
-  displayName: 'Windows 2016 win32'
-  pool:
-    vmImage: 'vs2017-win2016'
-
-  steps:
-
-  - task: DownloadSecureFile@1
-    name: R2012b
-    inputs:
-      secureFile: R2012b-win32.zip
-
-  - task: ExtractFiles@1
-    inputs:
-      archiveFilePatterns: $(R2012b.secureFilePath)
-      destinationFolder: ThirdParty/R2012b
-
-  - script: |
-      cmake -G "Visual Studio 15 2017" -B build -DMATLAB_DIR=ThirdParty/R2012b .
-      cmake --build build --config Release
-    displayName: Build generic S-function
-
-  - task: PublishPipelineArtifact@1
-    inputs:
-      path: sfun_fmurun.mexw32
-      artifact: win32
-
-- job: win64
-  displayName: 'Windows 2016 win64'
-  pool:
-    vmImage: 'vs2017-win2016'
-
-  steps:
-
-  - task: DownloadSecureFile@1
-    name: R2012b
-    inputs:
-      secureFile: R2012b-win64.zip
-
-  - task: ExtractFiles@1
-    inputs:
-      archiveFilePatterns: $(R2012b.secureFilePath)
-      destinationFolder: ThirdParty/R2012b
-
-  - script: |
-      cmake -G "Visual Studio 15 2017 Win64" -B build -DMATLAB_DIR=ThirdParty/R2012b .
-      cmake --build build --config Release
-    displayName: Build generic S-function
-
-  - task: PublishPipelineArtifact@1
-    inputs:
-      path: sfun_fmurun.mexw64
-      artifact: win64
-
+# - job: win32
+#   displayName: 'Windows 2016 win32'
+#   pool:
+#     vmImage: 'vs2017-win2016'
+#
+#   steps:
+#
+#   - task: DownloadSecureFile@1
+#     name: R2012b
+#     inputs:
+#       secureFile: R2012b-win32.zip
+#
+#   - task: ExtractFiles@1
+#     inputs:
+#       archiveFilePatterns: $(R2012b.secureFilePath)
+#       destinationFolder: ThirdParty/R2012b
+#
+#   - script: |
+#       cmake -G "Visual Studio 15 2017" -B build -DMATLAB_DIR=ThirdParty/R2012b .
+#       cmake --build build --config Release
+#     displayName: Build generic S-function
+#
+#   - task: PublishPipelineArtifact@1
+#     inputs:
+#       path: sfun_fmurun.mexw32
+#       artifact: win32
+#
+# - job: win64
+#   displayName: 'Windows 2016 win64'
+#   pool:
+#     vmImage: 'vs2017-win2016'
+#
+#   steps:
+#
+#   - task: DownloadSecureFile@1
+#     name: R2012b
+#     inputs:
+#       secureFile: R2012b-win64.zip
+#
+#   - task: ExtractFiles@1
+#     inputs:
+#       archiveFilePatterns: $(R2012b.secureFilePath)
+#       destinationFolder: ThirdParty/R2012b
+#
+#   - script: |
+#       cmake -G "Visual Studio 15 2017 Win64" -B build -DMATLAB_DIR=ThirdParty/R2012b .
+#       cmake --build build --config Release
+#     displayName: Build generic S-function
+#
+#   - task: PublishPipelineArtifact@1
+#     inputs:
+#       path: sfun_fmurun.mexw64
+#       artifact: win64
+#
 - job: linux64
   displayName: 'Ubuntu 16.04'
   pool:
@@ -63,8 +63,8 @@ jobs:
 
   - task: Maven@3
     inputs:
-      mavenPomFile: 'Java/pom.xml'
-      goals: 'package'
+      mavenPomFile: Java/pom.xml
+      goals: install
 
   - task: PublishPipelineArtifact@1
     inputs:
