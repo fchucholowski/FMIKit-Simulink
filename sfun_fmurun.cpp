@@ -67,7 +67,7 @@ enum Parameter {
 static string getStringParam(SimStruct *S, int index) {
 	const mxArray *pa = ssGetSFcnParam(S, index);
 	size_t buflen = mxGetN(pa) + 1;
-	auto data = static_cast<const mxChar*>mxGetData(pa);
+	auto data = static_cast<const mxChar*>(mxGetData(pa));
 	auto cstr = static_cast<char *>(mxMalloc(buflen));
 
 	// terminate the C string
