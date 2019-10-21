@@ -53,3 +53,20 @@ jobs:
     inputs:
       path: sfun_fmurun.mexw64
       artifact: win64
+
+- job: linux64
+  displayName: 'Ubuntu 16.04'
+  pool:
+    vmImage: 'ubuntu-16.04'
+
+  steps:
+
+  - task: Maven@3
+  inputs:
+    mavenPomFile: 'Java/pom.xml'
+    goals: 'package'
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      path: fmikit.jar
+      artifact: linux64
