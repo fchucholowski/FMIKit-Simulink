@@ -8,13 +8,13 @@ jobs:
   steps:
 
   - task: DownloadSecureFile@1
-    name: R2012b_win64
+    name: mySecureFile
     inputs:
       secureFile: R2012b-win64.zip
 
   - task: ExtractFiles@1
     inputs:
-      archiveFilePatterns: R2012b-win64.zip
+      archiveFilePatterns: $(mySecureFile.secureFilePath)
       destinationFolder: ThirdParty/R2012b
 
   - script: |
