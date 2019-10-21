@@ -8,7 +8,7 @@ jobs:
   steps:
 
   - task: DownloadSecureFile@1
-    name: R2012b-win64.zip
+    name: R2012b_win64
     inputs:
       secureFile: R2012b-win64.zip
 
