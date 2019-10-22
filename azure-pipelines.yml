@@ -76,7 +76,6 @@ jobs:
     displayName: Build generic S-function
 
   - task: Maven@3
-    name: Build fmikit.jar
     inputs:
       mavenPomFile: Java/pom.xml
       goals: install
