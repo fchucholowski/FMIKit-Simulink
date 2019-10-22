@@ -93,20 +93,23 @@ jobs:
 
   steps:
 
+  - script: |
+      mkdir dist
+
   - task: DownloadPipelineArtifact@2
     inputs:
       artifact: maci64
-      targetPath: '$(System.DefaultWorkingDirectory)'
+      targetPath: dist
 
   - task: DownloadPipelineArtifact@2
     inputs:
       artifact: win32
-      targetPath: '$(System.DefaultWorkingDirectory)'
+      targetPath: dist
 
   - task: DownloadPipelineArtifact@2
     inputs:
       artifact: win64
-      targetPath: '$(System.DefaultWorkingDirectory)'
+      targetPath: dist
 
   - task: DownloadSecureFile@1
     name: MATLAB
@@ -138,15 +141,16 @@ jobs:
 
   - script: |
       mkdir dist
-      cp -r +FMIKit dist/+FMIKit
-      cp -r include dist/include
-      cp -r src dist/src
-      cp fmikit.jar dist
+      cp -r +FMIKit         dist/+FMIKit
+      cp -r examples        dist/include
+      cp -r grtfmi          dist/include
+      cp -r include         dist/include
+      cp -r src             dist/src
+      cp -r rtwsfcnfmi      dist/src
+      cp fmikit.jar         dist
+      cp forms_rt.jar       dist
       cp sfun_fmurun.mexa64 dist
-      cp sfun_fmurun.mexmaci64 dist
-      cp sfun_fmurun.mexw32 dist
-      cp sfun_fmurun.mexw64 dist
-      cp sfun_fmurun.cpp dist/sfun_fmurun.cpp
+      cp sfun_fmurun.cpp    dist
       zip -r FMIKit-Simulink.zip dist
 
   - task: PublishPipelineArtifact@1
