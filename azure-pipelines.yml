@@ -72,9 +72,11 @@ jobs:
 
   - script: |
       mkdir build
+      cd build
       cmake --version
-      cmake -B build -DMATLAB_DIR=ThirdParty/R2018b-linux64 .
-      cmake --build build --config Release
+      cmake -DMATLAB_DIR=../ThirdParty/R2018b-linux64 ..
+      cmake --build . --config Release
+      cd ..
     displayName: Build generic S-function
 
   - task: Maven@3
