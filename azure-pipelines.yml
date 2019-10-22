@@ -60,11 +60,31 @@ jobs:
     vmImage: 'ubuntu-16.04'
 
   steps:
+  - task: DownloadSecureFile@1
+    name: MATLAB
+    inputs:
+      secureFile: R2018b-linux64.tar.gz
+
+  - task: ExtractFiles@1
+    inputs:
+      archiveFilePatterns: $(MATLAB.secureFilePath)
+      destinationFolder: ThirdParty
+
+  - script: |
+      cmake -B build -DMATLAB_DIR=ThirdParty/R2018b-linux64 .
+      cmake --build build --config Release
+    displayName: Build generic S-function
 
   - task: Maven@3
+    name: Build fmikit.jar
     inputs:
       mavenPomFile: Java/pom.xml
       goals: install
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      path: sfun_fmurun.mexa64
+      artifact: sfun
 
   - task: PublishPipelineArtifact@1
     inputs:
