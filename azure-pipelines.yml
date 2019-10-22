@@ -142,15 +142,17 @@ jobs:
   - script: |
       mkdir dist
       cp -r +FMIKit         dist/+FMIKit
-      cp -r examples        dist/include
-      cp -r grtfmi          dist/include
+      cp -r examples        dist/examples
+      cp -r grtfmi          dist/grtfmi
       cp -r include         dist/include
       cp -r src             dist/src
-      cp -r rtwsfcnfmi      dist/src
+      cp -r rtwsfcnfmi      dist/rtwsfcnfmi
+      cp FMIKit_blocks.slx  dist
       cp fmikit.jar         dist
       cp forms_rt.jar       dist
       cp sfun_fmurun.mexa64 dist
       cp sfun_fmurun.cpp    dist
+      cp swingx-1.6.jar     dist
       zip -r FMIKit-Simulink.zip dist
 
   - task: PublishPipelineArtifact@1
