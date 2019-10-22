@@ -84,10 +84,27 @@ jobs:
 
 - job: glnxa64
   displayName: 'Linux'
+  dependsOn:
+  - maci64
+  - win32
+  - win64
   pool:
     vmImage: 'ubuntu-16.04'
 
   steps:
+
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      artifact: maci64
+
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      artifact: win32
+
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      artifact: win64
+
   - task: DownloadSecureFile@1
     name: MATLAB
     inputs:
@@ -113,12 +130,20 @@ jobs:
       mavenPomFile: Java/pom.xml
       goals: install
 
-  - task: PublishPipelineArtifact@1
-    inputs:
-      path: sfun_fmurun.mexa64
-      artifact: glnxa64
+  - script: |
+      mkdir dist
+      cp -r +FMIKit dist/+FMIKit
+      cp -r include dist/include
+      cp -r src dist/src
+      cp fmikit.jar dist
+      cp sfun_fmurun.mexa64 dist
+      cp sfun_fmurun.mexmaci64 dist
+      cp sfun_fmurun.mexw32 dist
+      cp sfun_fmurun.mexw64 dist
+      cp sfun_fmurun.cpp dist/sfun_fmurun.cpp
+      zip -r FMIKit-Simulink.zip dist
 
   - task: PublishPipelineArtifact@1
     inputs:
-      path: fmikit.jar
-      artifact: jar
+      path: FMIKit-Simulink.zip
+      artifact: dist
