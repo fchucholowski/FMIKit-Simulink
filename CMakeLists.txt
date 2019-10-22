@@ -67,12 +67,12 @@ target_include_directories(sfun_fmurun PUBLIC
 )
 
 if (WIN32)
-  target_link_libraries(sfun_fmurun libmx libmat libmex shlwapi)
+  target_link_libraries(sfun_fmurun libmat libmex libmx shlwapi)
 elseif (APPLE)
   target_link_libraries(sfun_fmurun
-    ${MATLAB_DIR}/bin/maci64/libmx.dylib
-    ${MATLAB_DIR}/bin/maci64/libmex.dylib
     ${MATLAB_DIR}/bin/maci64/libmat.dylib
+    ${MATLAB_DIR}/bin/maci64/libmex.dylib
+    ${MATLAB_DIR}/bin/maci64/libmx.dylib
   )
 endif ()
 

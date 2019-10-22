@@ -54,6 +54,34 @@ jobs:
       path: sfun_fmurun.mexw64
       artifact: win64
 
+- job: maci64
+  displayName: 'macOS'
+  pool:
+    vmImage: 'macos-10.13'
+
+  steps:
+
+  - task: DownloadSecureFile@1
+    name: MATLAB
+    inputs:
+      secureFile: R2018b-maci64.zip
+
+  - task: ExtractFiles@1
+    inputs:
+      archiveFilePatterns: $(MATLAB.secureFilePath)
+      destinationFolder: ThirdParty/MATLAB
+
+  - script: |
+      cmake --version
+      cmake -B build -DMATLAB_DIR=$PWD/ThirdParty/MATLAB .
+      cmake --build build --config Release
+    displayName: Build generic S-function
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      path: sfun_fmurun.mexmaci64
+      artifact: maci64
+
 - job: glnxa64
   displayName: 'Linux'
   pool:
@@ -88,9 +116,9 @@ jobs:
   - task: PublishPipelineArtifact@1
     inputs:
       path: sfun_fmurun.mexa64
-      artifact: sfun
+      artifact: glnxa64
 
   - task: PublishPipelineArtifact@1
     inputs:
       path: fmikit.jar
-      artifact: glnxa64
+      artifact: jar
