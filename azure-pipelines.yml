@@ -136,7 +136,7 @@ jobs:
 
   - script: |
       python -m pip install markdown2
-      python .\docs\md2html.py
+      python docs/md2html.py
     displayName: Generate HTML documentation
 
   - task: Maven@3
