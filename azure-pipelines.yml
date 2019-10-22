@@ -110,6 +110,9 @@ jobs:
     inputs:
       secureFile: R2018b-linux64.tar.gz
 
+  - script: |
+      find .
+
   - task: ExtractFiles@1
     inputs:
       archiveFilePatterns: $(MATLAB.secureFilePath)
