@@ -48,11 +48,16 @@ add_library(sfun_fmurun SHARED
 
 SET_TARGET_PROPERTIES(sfun_fmurun PROPERTIES PREFIX "")
 
-target_compile_definitions(sfun_fmurun PUBLIC
-  _CRT_SECURE_NO_WARNINGS
-  "DLL_EXPORT_SYM=__declspec(dllexport)"
-  MATLAB_MEX_FILE
-)
+
+if (WIN32)
+  target_compile_definitions(sfun_fmurun PUBLIC
+    MATLAB_MEX_FILE
+    _CRT_SECURE_NO_WARNINGS
+    "DLL_EXPORT_SYM=__declspec(dllexport)"
+  )
+else ()
+  target_compile_definitions(sfun_fmurun PUBLIC MATLAB_MEX_FILE)
+endif ()
 
 target_include_directories(sfun_fmurun PUBLIC
 	${MATLAB_DIR}/extern/include
