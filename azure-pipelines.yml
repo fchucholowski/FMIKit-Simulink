@@ -71,6 +71,8 @@ jobs:
       destinationFolder: ThirdParty
 
   - script: |
+      mkdir build
+      cmake --version
       cmake -B build -DMATLAB_DIR=ThirdParty/R2018b-linux64 .
       cmake --build build --config Release
     displayName: Build generic S-function
