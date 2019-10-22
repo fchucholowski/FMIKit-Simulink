@@ -96,14 +96,17 @@ jobs:
   - task: DownloadPipelineArtifact@2
     inputs:
       artifact: maci64
+      targetPath: '$(Pipeline.Workspace)'
 
   - task: DownloadPipelineArtifact@2
     inputs:
       artifact: win32
+      targetPath: '$(Pipeline.Workspace)'
 
   - task: DownloadPipelineArtifact@2
     inputs:
       artifact: win64
+      targetPath: '$(Pipeline.Workspace)'
 
   - task: DownloadSecureFile@1
     name: MATLAB
