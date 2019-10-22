@@ -150,10 +150,12 @@ jobs:
       cp FMIKit_blocks.slx  dist
       cp fmikit.jar         dist
       cp forms_rt.jar       dist
+      cp LICENSE.txt        dist
       cp sfun_fmurun.mexa64 dist
       cp sfun_fmurun.cpp    dist
       cp swingx-1.6.jar     dist
       zip -r FMIKit-Simulink.zip dist
+    displayName: Create distribution archive
 
   - task: PublishPipelineArtifact@1
     inputs:
