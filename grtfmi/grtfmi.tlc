@@ -10,7 +10,26 @@
 %assign TargetRegistMutexOp   = 1 
 %assign TargetRegistSynchroOp = 1
 
+%% =======================================================================
+%% Vector Informatik GmbH custom code START
+%%
+%assign basepath = FEVAL("TD.BuildSupport.TlcCallbacks.GetTlcIncludeDirectory")
+%addincludepath "%<basepath>"
+%include "lib_dynamap.tlc"
+%%
+%% Vector Informatik GmbH custom code END
+%% =======================================================================
+
 %include "codegenentry.tlc"
+
+%% =======================================================================
+%% Vector Informatik GmbH custom code START
+%%
+%include "dynamap.tlc"
+%%
+%% Vector Informatik GmbH custom code END
+%% =======================================================================
+
 %assign GUID = FEVAL("grtfmi_generate_guid")
 %include "grtfmilib.tlc"
 %include "grtfmixml.tlc"
