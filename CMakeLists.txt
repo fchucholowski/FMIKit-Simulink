@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.2)
+cmake_minimum_required (VERSION 3.16)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE TYPE INTERNAL FORCE)
 
@@ -14,21 +14,10 @@ if (MSVC)
   string(REPLACE "/MDd" "/MTd" CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}")
 endif ()
 
-if (WIN32)
-  if ("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
-    set(MATLAB_DIR "C:/Program Files/MATLAB/R2012b" CACHE STRING "MATLAB install directory")
-    set(TARGET_SUFFIX mexw64)
-    link_directories(${MATLAB_DIR}/extern/lib/win64/microsoft)
-	else ()
-    set(MATLAB_DIR "C:/Program Files (x86)/MATLAB/R2012b" CACHE STRING "MATLAB install directory")
-		set(TARGET_SUFFIX mexw32)
-    link_directories(${MATLAB_DIR}/extern/lib/win32/microsoft)
-	endif ()
-elseif (APPLE)
-  set(TARGET_SUFFIX mexmaci64)
-else ()
-  set(TARGET_SUFFIX mexa64)
-endif ()
+find_package(Matlab)
+set(MATLAB_DIR ${Matlab_ROOT_DIR})
+set(TARGET_SUFFIX ${Matlab_MEX_EXTENSION})
+link_directories(${Matlab_MX_LIBRARY}/../)
 
 add_library(sfun_fmurun SHARED
   include/fmi1.h
