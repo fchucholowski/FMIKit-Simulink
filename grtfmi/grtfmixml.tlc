@@ -20,6 +20,7 @@
   description="%<description>"
   %endif
   version="%<ModelVersion>"
+  variableNamingConvention="structured"
   numberOfEventIndicators="%<ZCVectorlength>">
   
   <CoSimulation
