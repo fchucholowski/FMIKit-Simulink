@@ -28,6 +28,7 @@
   author="%<ModelAuthor>"
   %endif
   version="%<ModelVersion>"
+  variableNamingConvention="structured"
   numberOfEventIndicators="%<ZCVectorlength>">
   
   <CoSimulation
