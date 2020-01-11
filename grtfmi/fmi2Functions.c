@@ -224,7 +224,7 @@ fmi2Status fmi2SetReal(fmi2Component c, const fmi2ValueReference vr[], size_t nv
 			*((REAL64_T *)vptr) = value[i];
 			break;
 		case SS_SINGLE:
-			*((REAL32_T *)vptr) = value[i];
+			*((REAL32_T*)vptr) = (REAL32_T)value[i];
 			break;
 		default:
 			return fmi2Error;
@@ -359,7 +359,11 @@ fmi2Status fmi2DoStep(fmi2Component c,
 
 	while (rtmGetT(instance->S) + STEP_SIZE < tNext + DBL_EPSILON) {
 #endif
-		MODEL_STEP(instance->S);
+		#ifdef REUSABLE_FUNCTION
+				MODEL_STEP(instance->S);
+		#else
+			MODEL_STEP();
+		#endif
 		const char *errorStatus = rtmGetErrorStatus(instance->S);
 		if (errorStatus) {
 			instance->logger(instance->componentEnvironment, instance->instanceName, fmi2Error, "error", errorStatus);
