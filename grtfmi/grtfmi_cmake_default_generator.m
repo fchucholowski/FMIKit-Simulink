@@ -24,14 +24,8 @@ if ispc
         end
     elseif ~isempty(getenv('VS140COMNTOOLS'))
         generator = ['Visual Studio 14 2015' platform];
-    elseif ~isempty(getenv('VS120COMNTOOLS'))
-        generator = ['Visual Studio 12 2013' platform];
-    elseif ~isempty(getenv('VS110COMNTOOLS'))
-        generator = ['Visual Studio 11 2012' platform];
     elseif ~isempty(getenv('VS100COMNTOOLS'))
         generator = ['Visual Studio 10 2010' platform];
-    elseif ~isempty(getenv('VS90COMNTOOLS'))
-        generator = ['Visual Studio 9 2008' platform];
     end
 else
     generator = 'Unix Makefiles';
