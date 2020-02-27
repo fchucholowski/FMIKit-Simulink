@@ -215,6 +215,7 @@ target_compile_definitions(${MODEL} PUBLIC
   USE_RTMODEL
   NO_FMI_FUNCTION_PREFIX
   GRTFMI
+  MODEL=${MODEL}
 )
 
 target_link_libraries(${MODEL} ${CUSTOM_LIBRARY})
