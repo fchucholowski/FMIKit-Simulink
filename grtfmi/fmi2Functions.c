@@ -101,9 +101,7 @@ fmi2Component fmi2Instantiate(fmi2String instanceName,
 
 #ifdef REUSABLE_FUNCTION
 	instance->S = MODEL();
-	MODEL_INITIALIZE(instance->S);
 #else
-	MODEL_INITIALIZE();
 	instance->S = RT_MDL_INSTANCE;
 #endif
 
@@ -121,12 +119,21 @@ void fmi2FreeInstance(fmi2Component c) {
 }
 
 /* Enter and exit initialization mode, terminate and reset */
-fmi2Status fmi2SetupExperiment(fmi2Component c,
-	fmi2Boolean toleranceDefined,
-	fmi2Real tolerance,
-	fmi2Real startTime,
-	fmi2Boolean stopTimeDefined,
-	fmi2Real stopTime) {
+fmi2Status fmi2SetupExperiment(
+		fmi2Component c, fmi2Boolean toleranceDefined, fmi2Real tolerance, fmi2Real startTime,
+		fmi2Boolean stopTimeDefined, fmi2Real stopTime) {
+	ModelInstance* instance = (ModelInstance*)c;
+	const char* errorStatus;
+#ifdef REUSABLE_FUNCTION
+	MODEL_INITIALIZE(instance->S);
+#else
+	MODEL_INITIALIZE();
+#endif
+	errorStatus = rtmGetErrorStatus(instance->S);
+	if (errorStatus) {
+		instance->logger(instance->componentEnvironment, instance->instanceName, fmi2Error, "error", errorStatus);
+		return fmi2Error;
+	}
 	return fmi2OK;
 }
 
@@ -154,6 +161,7 @@ fmi2Status fmi2Terminate(fmi2Component c) {
 }
 
 fmi2Status fmi2Reset(fmi2Component c) {
+	const char* errorStatus;
 
     ModelInstance *instance = (ModelInstance *)c;
     
@@ -161,16 +169,16 @@ fmi2Status fmi2Reset(fmi2Component c) {
     if (instance->S) {
         MODEL_TERMINATE(instance->S);
     }
-
-	instance->S = MODEL();
-	MODEL_INITIALIZE(instance->S);
 #else
     if (instance->S) {
         MODEL_TERMINATE();
     }
-    
-	MODEL_INITIALIZE();
 #endif
+	errorStatus = rtmGetErrorStatus(instance->S);
+	if (errorStatus) {
+		instance->logger(instance->componentEnvironment, instance->instanceName, fmi2Error, "error", errorStatus);
+		return fmi2Error;
+	}
 
 	return fmi2OK;
 }
