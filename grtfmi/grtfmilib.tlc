@@ -185,7 +185,8 @@
     modelVariables[%<vr-1>].size    = 0;
     modelVariables[%<vr-1>].address = %<dataName>%<dataSubs>);
       %selectfile xmlfile
-    <ScalarVariable name="%<variableName>%<variableSubs>" valueReference="%<vr>"%<variableAttr>>
+    %assign dyna4VariableName = FEVAL("DYNA4.Platform.FmiKit.convertVariableName", "%<variableName>")
+    <ScalarVariable name="%<dyna4VariableName>%<variableSubs>" valueReference="%<vr>"%<variableAttr>>
       <%<fmiType>%<startAttr>%<typeAttr>/>
     </ScalarVariable>
       %assign index = index + 1
@@ -226,10 +227,11 @@
     %assign startValue = FEVAL("grtfmi_start_value", record.Value)
     %assign variableAttr = "%<variableAttr> start=\"%<startValue>\""
   %endif
+  %assign dyna4VariableName = FEVAL("DYNA4.Platform.FmiKit.convertVariableName", "%<variableName>")
   %if width == 1
-    <%<fmiType> name="%<variableName>" valueReference="%<vr>"%<variableAttr>/>
+    <%<fmiType> name="%<dyna4VariableName>" valueReference="%<vr>"%<variableAttr>/>
   %else
-    <%<fmiType> name="%<variableName>" valueReference="%<vr>"%<variableAttr>>
+    <%<fmiType> name="%<dyna4VariableName>" valueReference="%<vr>"%<variableAttr>>
     %foreach dimidx = SIZE(dims, 1)
       <Dimension start="%<dims[dimidx]>"/>
     %endforeach
