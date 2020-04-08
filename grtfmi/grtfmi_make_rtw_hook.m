@@ -117,7 +117,18 @@ switch hookMethod
         fclose(fid);
         
         disp('### Generating project')
-        status = system(['"' command '" -G "' generator '" "' strrep(grtfmi_dir, '\', '/') '"']);
+		architecture = regexp(generator, 'Visual Studio 16 2019(.*)', 'tokens');
+		if ~isempty(architecture)
+			generator = 'Visual Studio 16 2019';
+			if contains(architecture{1}, 'Win64')
+				architecture = ' -A x64';
+			else
+				architecture = ' -A Win32';
+			end
+		else
+			architecture = '';
+		end
+		status = system(['"' command '" -G "' generator '"' architecture ' "' strrep(grtfmi_dir, '\', '/') '"']);
         assert(status == 0, 'Failed to run CMake generator');
 
         disp('### Building FMU')
